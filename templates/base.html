@@ -1,0 +1,41 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}{% endblock %}</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="{% static 'css/style.css' %}">
+</head>
+<body class="bg-gray-100 text-gray-900">
+    <header class="bg-white shadow-md">
+    <nav class="container mx-auto flex justify-between items-center py-4 px-4">
+        <a href="/" class="text-xl font-bold text-blue-600">Mylibrary</a>
+
+        <ul class="flex space-x-6 font-semibold">
+            <li><a href="/" class="hover:text-blue-600 transition">Home</a></li>
+            <li><a href="" class="hover:text-blue-600 transition">Shop</a></li>
+            <li><a href="" class="hover:text-blue-600 transition">Profile</a></li>
+            {% if user.is_authenticated %}
+                <li><a href="" class="text-red-600 hover:underline">Logout</a></li>
+            {% else %}
+                <li><a href="" class="hover:text-blue-600 transition">Login</a></li>
+            {% endif %}
+        </ul>
+    </nav>
+</header>
+
+
+    {% block content %}
+    {% endblock %}
+    
+
+    <footer class="bg-gray-800 text-white mt-10">
+    <div class="container mx-auto py-6 px-4 text-center">
+        <p class="text-gray-300">© {{ now|date:"Y" }} Mylibrary. All rights reserved.</p>
+    </div>
+</footer>
+
+</body>
+</html>

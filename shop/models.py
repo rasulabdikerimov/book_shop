@@ -19,7 +19,7 @@ class CustomUser(AbstractUser):
                               verbose_name='Фото пользователя:',
                               null=True, blank=True)
     USERNAME_FIELD = 'email'
-    REQUIRED_FIELDS = ['username', 'phone_number', 'address']
+    REQUIRED_FIELDS = ['username']
 
     
 
@@ -45,7 +45,7 @@ class Authors(models.Model):
     full_name = models.CharField(max_length=100,
                                  verbose_name='ФИО автора:')
     birth_date = models.CharField(max_length=100,
-                                  verbose_name='Дата рождения автора:')
+                                  verbose_name='Дата рождения автора:',help_text='Формат: ДД.ММ.ГГГГ')
     country = models.ForeignKey(Countries, on_delete=models.CASCADE,
                                 verbose_name='Страна автора:')
     photo = models.ImageField(upload_to='authors/',
@@ -57,31 +57,30 @@ class Authors(models.Model):
     def __str__(self):
         return self.full_name
     
-class Review_image(models.Model):
-    image = models.ImageField(upload_to='reviews/',
-                              verbose_name='Фото к отзыву:')
-
 class Review(models.Model):
-    user = models.ForeignKey(CustomUser, on_delete=models.CASCADE,
-                             verbose_name='Пользователь:')
-    book = models.ForeignKey('Book', on_delete=models.CASCADE,
-                             verbose_name='Книга:')
+    user = models.ForeignKey(CustomUser, on_delete=models.CASCADE, verbose_name='Пользователь:')
+    book = models.ForeignKey('Book', on_delete=models.CASCADE, verbose_name='Книга:')
     stars = models.IntegerField(verbose_name='Рейтинг:')
     comment = models.TextField(verbose_name='Комментарий:')
-    created_at = models.DateTimeField(auto_now_add=True,
-                                      verbose_name='Дата создания отзыва:')
-    updated_at = models.DateTimeField(auto_now=True,
-                                      verbose_name='Дата обновления отзыва:')
-    image = models.ManyToManyField(Review_image, verbose_name='Фото к отзыву:', blank=True)
+    created_at = models.DateTimeField(auto_now_add=True, verbose_name='Дата создания отзыва:')
+    updated_at = models.DateTimeField(auto_now=True, verbose_name='Дата обновления отзыва:')
+    images = models.ManyToManyField('ReviewImage', verbose_name='Фото к отзыву:', blank=True)
 
     def __str__(self) -> str:
         return f'Review by {self.user.username} for {self.book.title}'
+
+
+class ReviewImage(models.Model):
+    image = models.ImageField(upload_to='reviews/', verbose_name='Фото к отзыву:')
+    def __str__(self) -> str:
+        return self.image.url
+
 
 class Book(models.Model):
     title = models.CharField(max_length=100,
                              verbose_name='Названия книги:')
     description = models.TextField(verbose_name='Описания книги:')
-    pub_date = models.CharField(verbose_name='Дата публикации:',max_length=4)
+    pub_date = models.CharField(verbose_name='Дата публикации:',max_length=4,help_text='Формат: ГГГГ')
     price = models.IntegerField(verbose_name='Цена книги:')
     photo = models.ImageField(upload_to='books/', verbose_name='Фото книги:')
     genres = models.ManyToManyField(Genres, verbose_name='Жанр книги:')
