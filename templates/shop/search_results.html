@@ -1,0 +1,51 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block title %}Результаты поиска - Mylibrary{% endblock %}
+
+{% block content %}
+
+<div class="container mx-auto px-4 py-10 max-w-6xl">
+
+    <h1 class="text-3xl font-bold mb-8 text-center">
+        🔎 Результаты поиска: <span class="text-blue-700">"{{ query }}"</span>
+    </h1>
+
+    {% if books %}
+    <div class="grid sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-8">
+
+        {% for book in books %}
+        <div class="bg-white rounded-xl shadow-lg hover:shadow-2xl transition duration-300 overflow-hidden">
+            
+            {% if book.photo %}
+                <img src="{{ book.photo.url }}" alt="{{ book.title }}" class="w-full h-56 object-cover">
+            {% else %}
+                <div class="w-full h-56 flex items-center justify-center text-6xl bg-gray-200">📚</div>
+            {% endif %}
+
+            <div class="p-4">
+                <h2 class="text-xl font-semibold mb-2">{{ book.title }}</h2>
+
+                <p class="text-gray-600 text-sm mb-2">
+                    <span class="font-bold">Автор:</span>
+                    {% for author in book.authors.all %}
+                        {{ author.full_name }}{% if not forloop.last %}, {% endif %}
+                    {% endfor %}
+                </p>
+
+                <p class="text-lg font-bold text-green-600">
+                    {{ book.price }} ₽
+                </p>
+            </div>
+
+        </div>
+        {% endfor %}
+    </div>
+
+    {% else %}
+        <p class="text-center text-2xl mt-20 text-gray-600">
+            По запросу <span class="font-bold text-blue-700">"{{ query }}"</span> ничего не найдено. 😕
+        </p>
+    {% endif %}
+</div>
+
+{% endblock %}

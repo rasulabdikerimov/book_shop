@@ -5,29 +5,33 @@
 
 {% block content %}
 
-<!-- ГЕРОЙ СЕКЦИЯ -->
+
 <div class="bg-gradient-to-r from-blue-600 to-blue-800 text-white py-16">
     <div class="container mx-auto px-4 max-w-6xl text-center">
         <h1 class="text-4xl md:text-5xl font-bold mb-4">📖 Добро пожаловать в Mylibrary</h1>
         <p class="text-xl text-blue-100 mb-8">Найдите вашу следующую любимую книгу из огромной коллекции</p>
-        <input type="search" placeholder="🔍 Поиск книги..." class="w-full md:w-1/2 px-6 py-3 rounded-lg text-gray-900 focus:outline-none focus:ring-4 focus:ring-blue-300">
+        <form  action="{% url 'search_results' %}">
+             <input type="search" name="q" placeholder="🔍 Поиск книги..." class="w-full md:w-1/2 px-6 py-3 rounded-lg text-gray-900 focus:outline-none focus:ring-4 focus:ring-blue-300">
+
+        </form>
+       
     </div>
 </div>
 
 <div class="container mx-auto px-4 max-w-6xl py-8">
 
-    <!-- ПОПУЛЯРНЫЕ КНИГИ -->
+    
     <section class="mb-12">
         <div class="flex items-center justify-between mb-8">
             <h2 class="text-3xl font-bold text-gray-900 border-b-4 border-blue-600 pb-2">⭐ Популярные книги</h2>
-            <a href="" class="text-blue-600 font-semibold hover:text-blue-800 transition">Смотреть все →</a>
+            <a href="{% url 'popular_books' %}" class="text-blue-600 font-semibold hover:text-blue-800 transition">Смотреть все →</a>
         </div>
 
         <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
             {% for book in books %}
             <div class="group">
                 <div class="bg-white rounded-lg overflow-hidden shadow-md hover:shadow-xl transition-all duration-300 transform hover:-translate-y-2 h-full flex flex-col">
-                    <!-- Изображение -->
+                   
                     <div class="relative overflow-hidden h-64 bg-gray-200">
                         {% if book.photo %}
                             <img src="{{ book.photo.url }}" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300" alt="{{ book.title }}">
@@ -35,7 +39,7 @@
                             <div class="w-full h-full flex items-center justify-center bg-gradient-to-br from-gray-300 to-gray-400 text-white text-6xl">📚</div>
                         {% endif %}
                         
-                        <!-- Бирка жанра -->
+                      
                         {% if book.genres.all %}
                             <div class="absolute top-3 right-3 bg-blue-600 text-white px-3 py-1 rounded-full text-sm font-bold opacity-0 group-hover:opacity-100 transition">
                                 {{ book.genres.all.0.genre }}

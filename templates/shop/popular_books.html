@@ -1,0 +1,67 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block title %}Все книги - Mylibrary{% endblock %}
+
+{% block content %}
+
+<div class="container mx-auto px-4 max-w-6xl py-10">
+
+    <h1 class="text-3xl font-bold text-gray-900 border-b-4 border-blue-600 pb-2 mb-8">
+        📚 Все книги
+    </h1>
+
+    {% if books %}
+    <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+        {% for book in books %}
+
+        <div class="group">
+            <div class="bg-white rounded-lg overflow-hidden shadow-md hover:shadow-xl transition-all duration-300 transform hover:-translate-y-2 h-full flex flex-col">
+                
+                <div class="relative overflow-hidden h-64 bg-gray-200">
+                    {% if book.photo %}
+                        <img src="{{ book.photo.url }}" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300" alt="{{ book.title }}">
+                    {% else %}
+                        <div class="w-full h-full flex items-center justify-center bg-gradient-to-br from-gray-300 to-gray-400 text-white text-6xl">📚</div>
+                    {% endif %}
+                    
+                    {% if book.genres.all %}
+                        <div class="absolute top-3 right-3 bg-blue-600 text-white px-3 py-1 rounded-full text-sm font-bold opacity-0 group-hover:opacity-100 transition">
+                            {{ book.genres.all.0.genre }}
+                        </div>
+                    {% endif %}
+                </div>
+
+                <div class="p-4 flex-grow flex flex-col">
+                    <h3 class="font-bold text-gray-900 line-clamp-2 mb-2 text-sm group-hover:text-blue-600 transition">{{ book.title }}</h3>
+
+                    <p class="text-xs text-gray-500 mb-3">
+                        {% for author in book.authors.all %}
+                            <span>{{ author.full_name }}</span>{% if not forloop.last %}, {% endif %}
+                        {% endfor %}
+                    </p>
+
+                    <div class="mt-auto">
+                        {% if book.price %}
+                            <p class="text-2xl font-bold text-green-600 mb-3">{{ book.price }} ₽</p>
+                        {% else %}
+                            <p class="text-gray-400 mb-3">Цена не указана</p>
+                        {% endif %}
+
+                        <a href="{% url 'detail' book.id %}" class="w-full block bg-gradient-to-r from-blue-600 to-blue-800 text-white font-bold py-2 px-4 rounded-lg hover:from-blue-700 hover:to-blue-900 transition-all transform hover:shadow-lg active:scale-95">
+                            Подробнее
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        {% endfor %}
+    </div>
+    {% else %}
+        <div class="text-center py-20">
+            <p class="text-gray-500 text-xl">😕 Пока книг нет</p>
+        </div>
+    {% endif %}
+</div>
+
+{% endblock %}
