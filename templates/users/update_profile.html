@@ -1,0 +1,223 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Редактирование профиля - Mylibrary{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 max-w-4xl py-12">
+    <!-- Заголовок -->
+    <div class="mb-12">
+        <h1 class="text-5xl font-bold text-gray-900 dark:text-white mb-3">✏️ Редактирование профиля</h1>
+        <p class="text-xl text-gray-600 dark:text-slate-400">Обновите свою информацию и фото профиля</p>
+    </div>
+
+    <!-- Основной контент -->
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <!-- Левая часть - Превью профиля -->
+        <div class="lg:col-span-1">
+            <div class="bg-white dark:bg-slate-800 rounded-xl shadow-lg dark:shadow-xl p-6 sticky top-20 transition-colors">
+                <h3 class="text-lg font-bold text-gray-900 dark:text-white mb-4">👤 Текущий профиль</h3>
+                
+                <!-- Аватар -->
+                <div class="mb-6 text-center">
+                    {% if request.user.image %}
+                        <img src="{{ request.user.image.url }}" 
+                             class="w-32 h-32 rounded-full object-cover mx-auto border-4 border-blue-500 dark:border-blue-400 shadow-lg" 
+                             alt="{{ request.user.username }}">
+                    {% else %}
+                        <div class="w-32 h-32 rounded-full bg-gradient-to-br from-blue-400 to-blue-600 mx-auto flex items-center justify-center text-white text-5xl font-bold border-4 border-blue-500 dark:border-blue-400 shadow-lg">
+                            {{ request.user.username|first|upper }}
+                        </div>
+                    {% endif %}
+                </div>
+
+                <!-- Основная информация -->
+                <div class="space-y-4 text-center">
+                    <div>
+                        <p class="text-sm text-gray-500 dark:text-slate-400">Имя пользователя</p>
+                        <p class="text-lg font-bold text-gray-900 dark:text-white">{{ request.user.username }}</p>
+                    </div>
+                    <div>
+                        <p class="text-sm text-gray-500 dark:text-slate-400">Email</p>
+                        <p class="text-lg font-bold text-gray-900 dark:text-white break-words">{{ request.user.email }}</p>
+                    </div>
+                    <div>
+                        <p class="text-sm text-gray-500 dark:text-slate-400">Номер телефона</p>
+                        <p class="text-lg font-bold text-gray-900 dark:text-white">{{ request.user.phone_number|default:"Не указан" }}</p>
+                    </div>
+                    <div>
+                        <p class="text-sm text-gray-500 dark:text-slate-400">Адрес</p>
+                        <p class="text-lg font-bold text-gray-900 dark:text-white">{{ request.user.address|default:"Не указан" }}</p>
+                    </div>
+                </div>
+
+                <!-- Кнопка возврата -->
+                <a href="{% url 'profile' %}" class="w-full block mt-6 bg-gray-500 dark:bg-slate-700 text-white font-bold py-3 px-4 rounded-lg hover:bg-gray-600 dark:hover:bg-slate-600 transition-all text-center">
+                    ← Назад в профиль
+                </a>
+            </div>
+        </div>
+
+        <!-- Правая часть - Форма редактирования -->
+        <div class="lg:col-span-2">
+            <div class="bg-white dark:bg-slate-800 rounded-xl shadow-lg dark:shadow-xl p-8 transition-colors">
+                <form method="POST" enctype="multipart/form-data" class="space-y-6">
+                    {% csrf_token %}
+
+                    <!-- Email -->
+                    <div>
+                        <label for="{{ form.email.id_for_label }}" class="block text-sm font-bold text-gray-900 dark:text-white mb-2">
+                            📧 Email
+                        </label>
+                        <input 
+                            type="email" 
+                            name="email" 
+                            id="{{ form.email.id_for_label }}"
+                            value="{{ request.user.email }}"
+                            class="w-full px-4 py-3 rounded-lg bg-gray-50 dark:bg-slate-700 border-2 border-gray-300 dark:border-slate-600 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-transparent transition"
+                            required
+                        >
+                        {% if form.email.errors %}
+                            <p class="text-red-500 text-sm mt-1">{{ form.email.errors.0 }}</p>
+                        {% endif %}
+                    </div>
+
+                    <!-- Username -->
+                    <div>
+                        <label for="{{ form.username.id_for_label }}" class="block text-sm font-bold text-gray-900 dark:text-white mb-2">
+                            👤 Имя пользователя
+                        </label>
+                        <input 
+                            type="text" 
+                            name="username" 
+                            id="{{ form.username.id_for_label }}"
+                            value="{{ request.user.username }}"
+                            class="w-full px-4 py-3 rounded-lg bg-gray-50 dark:bg-slate-700 border-2 border-gray-300 dark:border-slate-600 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-transparent transition"
+                            required
+                        >
+                        {% if form.username.errors %}
+                            <p class="text-red-500 text-sm mt-1">{{ form.username.errors.0 }}</p>
+                        {% endif %}
+                    </div>
+
+                    <!-- Phone Number -->
+                    <div>
+                        <label for="{{ form.phone_number.id_for_label }}" class="block text-sm font-bold text-gray-900 dark:text-white mb-2">
+                            📱 Номер телефона
+                        </label>
+                        <input 
+                            type="tel" 
+                            name="phone_number" 
+                            id="{{ form.phone_number.id_for_label }}"
+                            value="{{ request.user.phone_number|default:'' }}"
+                            placeholder="+7 (999) 999-99-99"
+                            class="w-full px-4 py-3 rounded-lg bg-gray-50 dark:bg-slate-700 border-2 border-gray-300 dark:border-slate-600 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-transparent transition"
+                        >
+                        {% if form.phone_number.errors %}
+                            <p class="text-red-500 text-sm mt-1">{{ form.phone_number.errors.0 }}</p>
+                        {% endif %}
+                    </div>
+
+                    <!-- Address -->
+                    <div>
+                        <label for="{{ form.address.id_for_label }}" class="block text-sm font-bold text-gray-900 dark:text-white mb-2">
+                            🏠 Адрес
+                        </label>
+                        <input 
+                            type="text" 
+                            name="address" 
+                            id="{{ form.address.id_for_label }}"
+                            value="{{ request.user.address|default:'' }}"
+                            placeholder="Ваш адрес"
+                            class="w-full px-4 py-3 rounded-lg bg-gray-50 dark:bg-slate-700 border-2 border-gray-300 dark:border-slate-600 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-transparent transition"
+                        >
+                        {% if form.address.errors %}
+                            <p class="text-red-500 text-sm mt-1">{{ form.address.errors.0 }}</p>
+                        {% endif %}
+                    </div>
+
+                    <!-- Profile Photo -->
+                    <div>
+                        <label for="{{ form.image.id_for_label }}" class="block text-sm font-bold text-gray-900 dark:text-white mb-2">
+                            📷 Фото профиля
+                        </label>
+                        <div class="relative">
+                            <input 
+                                type="file" 
+                                name="image" 
+                                id="{{ form.image.id_for_label }}"
+                                accept="image/*"
+                                class="w-full px-4 py-3 rounded-lg bg-gray-50 dark:bg-slate-700 border-2 border-gray-300 dark:border-slate-600 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-transparent transition file:bg-blue-600 file:text-white file:font-bold file:py-2 file:px-4 file:rounded-lg file:border-0 file:cursor-pointer file:mr-4 hover:file:bg-blue-700"
+                            >
+                        </div>
+                        {% if request.user.image %}
+                            <p class="text-xs text-gray-500 dark:text-slate-400 mt-2">
+                                📎 Текущее фото: <span class="font-semibold">{{ request.user.image.name|slice:"6:" }}</span>
+                            </p>
+                        {% endif %}
+                        {% if form.image.errors %}
+                            <p class="text-red-500 text-sm mt-1">{{ form.image.errors.0 }}</p>
+                        {% endif %}
+                    </div>
+
+                    <!-- First Name -->
+                    <div>
+                        <label for="{{ form.first_name.id_for_label }}" class="block text-sm font-bold text-gray-900 dark:text-white mb-2">
+                            📝 Имя
+                        </label>
+                        <input 
+                            type="text" 
+                            name="first_name" 
+                            id="{{ form.first_name.id_for_label }}"
+                            value="{{ request.user.first_name|default:'' }}"
+                            placeholder="Ваше имя"
+                            class="w-full px-4 py-3 rounded-lg bg-gray-50 dark:bg-slate-700 border-2 border-gray-300 dark:border-slate-600 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-transparent transition"
+                        >
+                        {% if form.first_name.errors %}
+                            <p class="text-red-500 text-sm mt-1">{{ form.first_name.errors.0 }}</p>
+                        {% endif %}
+                    </div>
+
+                    <!-- Last Name -->
+                    <div>
+                        <label for="{{ form.last_name.id_for_label }}" class="block text-sm font-bold text-gray-900 dark:text-white mb-2">
+                            📝 Фамилия
+                        </label>
+                        <input 
+                            type="text" 
+                            name="last_name" 
+                            id="{{ form.last_name.id_for_label }}"
+                            value="{{ request.user.last_name|default:'' }}"
+                            placeholder="Ваша фамилия"
+                            class="w-full px-4 py-3 rounded-lg bg-gray-50 dark:bg-slate-700 border-2 border-gray-300 dark:border-slate-600 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-transparent transition"
+                        >
+                        {% if form.last_name.errors %}
+                            <p class="text-red-500 text-sm mt-1">{{ form.last_name.errors.0 }}</p>
+                        {% endif %}
+                    </div>
+
+                    <!-- Ошибки формы -->
+                    {% if form.non_field_errors %}
+                        <div class="bg-red-100 dark:bg-red-900 border-l-4 border-red-500 p-4 rounded">
+                            <p class="text-red-700 dark:text-red-200">{{ form.non_field_errors.0 }}</p>
+                        </div>
+                    {% endif %}
+
+                    <!-- Кнопки -->
+                    <div class="flex gap-4 pt-6 border-t border-gray-300 dark:border-slate-700">
+                        <button 
+                            type="submit" 
+                            class="flex-1 bg-gradient-to-r from-green-600 to-emerald-600 dark:from-green-700 dark:to-emerald-700 text-white font-bold py-3 px-4 rounded-lg hover:from-green-700 hover:to-emerald-700 dark:hover:from-green-600 dark:hover:to-emerald-600 transition-all transform hover:shadow-lg active:scale-95"
+                        >
+                            ✅ Сохранить изменения
+                        </button>
+                        <a href="{% url 'profile' %}" class="flex-1 bg-gray-500 dark:bg-slate-700 text-white font-bold py-3 px-4 rounded-lg hover:bg-gray-600 dark:hover:bg-slate-600 transition-all text-center">
+                            ❌ Отмена
+                        </a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

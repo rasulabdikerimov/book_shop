@@ -1,31 +1,108 @@
 {% load static %}
 <!DOCTYPE html>
-<html lang="ru">
+<html lang="ru" class="light">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}Mylibrary{% endblock %}</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="{% static 'css/style.css' %}">
+    <script>
+        // Инициализация темы при загрузке страницы
+        function initTheme() {
+            const savedTheme = localStorage.getItem('theme') || 'light';
+            const html = document.documentElement;
+            html.classList.remove('light', 'dark');
+            html.classList.add(savedTheme);
+            
+            // Обновляем кнопку переключения
+            const themeToggle = document.getElementById('theme-toggle');
+            if (themeToggle) {
+                themeToggle.checked = savedTheme === 'dark';
+            }
+        }
+
+        // Переключение темы
+        function toggleTheme() {
+            const html = document.documentElement;
+            const isDark = html.classList.contains('dark');
+            const newTheme = isDark ? 'light' : 'dark';
+            
+            html.classList.remove('light', 'dark');
+            html.classList.add(newTheme);
+            localStorage.setItem('theme', newTheme);
+        }
+
+        // Инициализируем при загрузке
+        document.addEventListener('DOMContentLoaded', initTheme);
+        window.addEventListener('load', initTheme);
+    </script>
+    <style>
+        /* Light theme */
+        html.light {
+            --bg-primary: #f9fafb;
+            --bg-secondary: #ffffff;
+            --text-primary: #111827;
+            --text-secondary: #6b7280;
+            --border-color: #e5e7eb;
+            --header-gradient: linear-gradient(to right, #2563eb, #1e40af);
+            --footer-gradient: linear-gradient(to right, #1f2937, #111827);
+            --card-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            --card-hover-shadow: 0 20px 25px rgba(0, 0, 0, 0.15);
+        }
+
+        /* Dark theme - ПОЛНОСТЬЮ ТЁМНАЯ ПАЛИТРА */
+        html.dark {
+            --bg-primary: #0f172a;
+            --bg-secondary: #1e293b;
+            --text-primary: #f1f5f9;
+            --text-secondary: #cbd5e1;
+            --border-color: #334155;
+            --header-gradient: linear-gradient(to right, #0c2d6b, #020617);
+            --footer-gradient: linear-gradient(to right, #0f172a, #020617);
+            --card-shadow: 0 4px 6px rgba(0, 0, 0, 0.5);
+            --card-hover-shadow: 0 20px 25px rgba(0, 0, 0, 0.7);
+            --accent-primary: #3b82f6;
+            --accent-secondary: #60a5fa;
+            --accent-success: #10b981;
+            --accent-danger: #ef4444;
+        }
+
+        body {
+            background-color: var(--bg-primary);
+            color: var(--text-primary);
+            transition: background-color 0.3s ease, color 0.3s ease;
+        }
+    </style>
 </head>
-<body class="bg-gray-50 text-gray-900">
+<body>
     <!-- НАВИГАЦИЯ -->
-    <header class="sticky top-0 z-50 bg-gradient-to-r from-blue-600 to-blue-800 shadow-lg">
+    <header class="sticky top-0 z-50 bg-gradient-to-r from-blue-600 to-blue-800 dark:from-slate-950 dark:to-black shadow-lg transition-colors duration-300">
         <nav class="container mx-auto flex justify-between items-center py-4 px-4 max-w-6xl">
-            <a href="/" class="text-2xl font-bold text-white hover:text-blue-100 transition">📚 Mylibrary</a>
+            <a href="{% url 'homepage' %}" class="text-2xl font-bold text-white hover:text-blue-100 dark:hover:text-blue-200 transition">📚 Mylibrary</a>
 
             <ul class="hidden md:flex space-x-8 font-semibold">
-                <li><a href="/" class="text-white hover:text-blue-100 transition">🏠 Главная</a></li>
-                <li><a href="" class="text-white hover:text-blue-100 transition">🛍️ Каталог</a></li>
-                <li><a href="" class="text-white hover:text-blue-100 transition">❤️ Избранное</a></li>
+                <li><a href="{% url 'homepage' %}" class="text-white hover:text-blue-100 dark:hover:text-blue-200 transition">🏠 Главная</a></li>
+                <li><a href="{% url 'popular_books' %}" class="text-white hover:text-blue-100 dark:hover:text-blue-200 transition">🛍️ Каталог</a></li>
+                <li><a href="" class="text-white hover:text-blue-100 dark:hover:text-blue-200 transition">❤️ Избранное</a></li>
                 {% if user.is_authenticated %}
-                    <li><a href="" class="text-white hover:text-blue-100 transition">👤 {{ user.email }}</a></li>
-                    <li><a href="" class="text-red-300 hover:text-red-100 transition font-bold">🚪 Выход</a></li>
+                    <li><a href="{% url 'profile' %}" class="text-white hover:text-blue-100 dark:hover:text-blue-200 transition">👤 {{ user.email }}</a></li>
+                    <li><a href="{% url 'logout' %}" class="text-red-300 hover:text-red-100 transition font-bold">🚪 Выход</a></li>
                 {% else %}
-                    <li><a href="" class="text-white hover:text-blue-100 transition">🔑 Вход</a></li>
-                    <li><a href="" class="bg-white text-blue-600 px-4 py-2 rounded-lg font-bold hover:bg-blue-50 transition">📝 Регистрация</a></li>
+                    <li><a href="{% url 'login' %}" class="text-white hover:text-blue-100 dark:hover:text-blue-200 transition">🔑 Вход</a></li>
+                    <li><a href="{% url 'registration' %}" class="bg-white text-blue-600 dark:bg-slate-200 dark:text-slate-950 px-4 py-2 rounded-lg font-bold hover:bg-blue-50 dark:hover:bg-slate-100 transition">📝 Регистрация</a></li>
                 {% endif %}
             </ul>
+
+            <!-- Переключатель темы -->
+            <div class="flex items-center gap-4">
+                <label class="flex items-center cursor-pointer">
+                    <input type="checkbox" id="theme-toggle" onchange="toggleTheme()" class="sr-only">
+                    <div class="relative w-12 h-6 bg-gray-300 dark:bg-slate-700 rounded-full transition-colors duration-300"></div>
+                    <span class="absolute left-1 text-lg transition-all duration-300">☀️</span>
+                    <span class="absolute right-1 text-lg transition-all duration-300">🌙</span>
+                </label>
+            </div>
 
             <!-- Мобильное меню -->
             <button class="md:hidden text-white text-2xl">☰</button>
@@ -39,19 +116,19 @@
     </main>
 
     <!-- FOOTER -->
-    <footer class="bg-gradient-to-r from-gray-800 to-gray-900 text-white mt-16">
+    <footer class="bg-gradient-to-r from-gray-800 to-gray-900 dark:from-black dark:to-slate-950 text-white mt-16 transition-colors duration-300">
         <div class="container mx-auto px-4 max-w-6xl py-12">
             <div class="grid grid-cols-1 md:grid-cols-4 gap-8 mb-8">
                 <!-- О сайте -->
                 <div>
                     <h3 class="text-xl font-bold mb-4">📚 Mylibrary</h3>
-                    <p class="text-gray-400">Огромная коллекция книг для всех возрастов и интересов</p>
+                    <p class="text-gray-400 dark:text-slate-400">Огромная коллекция книг для всех возрастов и интересов</p>
                 </div>
 
                 <!-- Навигация -->
                 <div>
                     <h3 class="text-lg font-bold mb-4">Навигация</h3>
-                    <ul class="space-y-2 text-gray-400">
+                    <ul class="space-y-2 text-gray-400 dark:text-slate-400">
                         <li><a href="/" class="hover:text-white transition">Главная</a></li>
                         <li><a href="" class="hover:text-white transition">Каталог</a></li>
                         <li><a href="" class="hover:text-white transition">О нас</a></li>
@@ -62,7 +139,7 @@
                 <!-- Информация -->
                 <div>
                     <h3 class="text-lg font-bold mb-4">Информация</h3>
-                    <ul class="space-y-2 text-gray-400">
+                    <ul class="space-y-2 text-gray-400 dark:text-slate-400">
                         <li><a href="" class="hover:text-white transition">Условия использования</a></li>
                         <li><a href="" class="hover:text-white transition">Политика конфиденциальности</a></li>
                         <li><a href="" class="hover:text-white transition">Доставка</a></li>
@@ -73,13 +150,13 @@
                 <!-- Контакты -->
                 <div>
                     <h3 class="text-lg font-bold mb-4">Контакты</h3>
-                    <p class="text-gray-400 mb-2">📧 info@mylibrary.com</p>
-                    <p class="text-gray-400 mb-2">📱 +7 (999) 999-99-99</p>
-                    <p class="text-gray-400">🏢 Москва, ул. Книжная, д. 1</p>
+                    <p class="text-gray-400 dark:text-slate-400 mb-2">📧 info@mylibrary.com</p>
+                    <p class="text-gray-400 dark:text-slate-400 mb-2">📱 +7 (999) 999-99-99</p>
+                    <p class="text-gray-400 dark:text-slate-400">🏢 Москва, ул. Книжная, д. 1</p>
                 </div>
             </div>
 
-            <div class="border-t border-gray-700 pt-8 text-center text-gray-400">
+            <div class="border-t border-gray-700 dark:border-slate-800 pt-8 text-center text-gray-400 dark:text-slate-500">
                 <p>© {{ now|date:"Y" }} Mylibrary. Все права защищены.</p>
             </div>
         </div>

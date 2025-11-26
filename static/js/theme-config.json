@@ -1,0 +1,89 @@
+{
+  "themes": {
+    "light": {
+      "primary": {
+        "bg": "#f9fafb",
+        "text": "#111827",
+        "border": "#e5e7eb"
+      },
+      "secondary": {
+        "bg": "#ffffff",
+        "text": "#6b7280",
+        "border": "#d1d5db"
+      },
+      "header": {
+        "gradient": "from-blue-600 to-blue-800",
+        "text": "text-white",
+        "shadow": "shadow-lg"
+      },
+      "footer": {
+        "gradient": "from-gray-800 to-gray-900",
+        "text": "text-gray-400",
+        "bg": "bg-gray-800"
+      },
+      "card": {
+        "bg": "bg-white",
+        "text": "text-gray-900",
+        "shadow": "shadow-md hover:shadow-xl"
+      },
+      "button": {
+        "primary": "bg-blue-600 hover:bg-blue-700",
+        "secondary": "bg-gray-300 hover:bg-blue-600",
+        "text": "text-white"
+      },
+      "accent": {
+        "success": "#10b981",
+        "danger": "#ef4444",
+        "warning": "#f59e0b",
+        "info": "#3b82f6"
+      }
+    },
+    "dark": {
+      "primary": {
+        "bg": "#0f172a",
+        "text": "#f1f5f9",
+        "border": "#334155"
+      },
+      "secondary": {
+        "bg": "#1e293b",
+        "text": "#cbd5e1",
+        "border": "#475569"
+      },
+      "header": {
+        "gradient": "from-slate-950 to-slate-900",
+        "text": "text-white",
+        "shadow": "shadow-lg"
+      },
+      "footer": {
+        "gradient": "from-slate-950 to-black",
+        "text": "text-gray-500",
+        "bg": "bg-slate-950"
+      },
+      "card": {
+        "bg": "bg-slate-800",
+        "text": "text-slate-100",
+        "shadow": "shadow-lg dark:hover:shadow-2xl"
+      },
+      "button": {
+        "primary": "bg-slate-900 hover:bg-slate-800",
+        "secondary": "bg-slate-700 hover:bg-slate-800",
+        "text": "text-white"
+      },
+      "accent": {
+        "success": "#10b981",
+        "danger": "#ef4444",
+        "warning": "#f59e0b",
+        "info": "#60a5fa"
+      }
+    }
+  },
+  "darkColors": {
+    "navy": "#0f172a",
+    "darkNavy": "#020617",
+    "slateNavy": "#1e293b",
+    "slateGray": "#334155",
+    "white": "#f1f5f9",
+    "lightGray": "#cbd5e1",
+    "mediumGray": "#94a3b8"
+  }
+}

@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Выход - Mylibrary{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 max-w-6xl py-24">
+    <div class="flex flex-col items-center justify-center">
+        <!-- Успешный выход -->
+        <div class="bg-white dark:bg-slate-800 rounded-xl shadow-2xl dark:shadow-2xl p-12 text-center max-w-lg transition-colors">
+            <div class="text-6xl mb-6">👋</div>
+            <h1 class="text-4xl font-bold text-gray-900 dark:text-white mb-4">До встречи!</h1>
+            <p class="text-xl text-gray-600 dark:text-slate-400 mb-2">
+                Вы успешно вышли из своего аккаунта
+            </p>
+            <p class="text-gray-600 dark:text-slate-400 mb-8">
+                Надеемся вскоре вас снова увидеть в нашей библиотеке
+            </p>
+
+            <!-- Анимация загрузки -->
+            <div class="mb-8">
+                <div class="w-full bg-gray-200 dark:bg-slate-700 rounded-full h-1 overflow-hidden">
+                    <div class="bg-blue-600 dark:bg-blue-500 h-full w-0 animate-pulse"></div>
+                </div>
+            </div>
+
+            <!-- Кнопки -->
+            <div class="flex flex-col sm:flex-row gap-4 justify-center">
+                <a href="{% url 'homepage' %}" class="bg-blue-600 dark:bg-slate-900 text-white font-bold py-3 px-8 rounded-lg hover:bg-blue-700 dark:hover:bg-slate-800 transition-all transform hover:scale-105">
+                    🏠 На главную
+                </a>
+                <a href="{% url 'login' %}" class="bg-green-600 dark:bg-green-800 text-white font-bold py-3 px-8 rounded-lg hover:bg-green-700 dark:hover:bg-green-900 transition-all transform hover:scale-105">
+                    🔐 Войти снова
+                </a>
+            </div>
+
+            <!-- Текст перенаправления -->
+            <p class="text-gray-500 dark:text-slate-400 mt-8 text-sm">
+                Вы будете перенаправлены на главную страницу через 5 секунд...
+            </p>
+        </div>
+    </div>
+</div>
+
+<!-- Скрипт перенаправления -->
+<script>
+    setTimeout(function() {
+        window.location.href = "{% url 'homepage' %}";
+    }, 5000);
+</script>
+{% endblock %}

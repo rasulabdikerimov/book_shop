@@ -6,33 +6,33 @@
 
 <div class="container mx-auto px-4 py-10 max-w-6xl">
 
-    <h1 class="text-3xl font-bold mb-8 text-center">
-        🔎 Результаты поиска: <span class="text-blue-700">"{{ query }}"</span>
+    <h1 class="text-3xl font-bold mb-8 text-center text-gray-900 dark:text-white transition-colors">
+        🔎 Результаты поиска: <span class="text-blue-700 dark:text-blue-400">{{ query }}</span>
     </h1>
 
     {% if books %}
     <div class="grid sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-8">
 
         {% for book in books %}
-        <div class="bg-white rounded-xl shadow-lg hover:shadow-2xl transition duration-300 overflow-hidden">
+        <div class="bg-white dark:bg-slate-800 rounded-xl shadow-lg dark:shadow-lg hover:shadow-2xl dark:hover:shadow-2xl transition duration-300 overflow-hidden">
             
             {% if book.photo %}
                 <img src="{{ book.photo.url }}" alt="{{ book.title }}" class="w-full h-56 object-cover">
             {% else %}
-                <div class="w-full h-56 flex items-center justify-center text-6xl bg-gray-200">📚</div>
+                <div class="w-full h-56 flex items-center justify-center text-6xl bg-gray-200 dark:bg-slate-700">📚</div>
             {% endif %}
 
             <div class="p-4">
-                <h2 class="text-xl font-semibold mb-2">{{ book.title }}</h2>
+                <h2 class="text-xl font-semibold mb-2 text-gray-900 dark:text-slate-100 transition-colors">{{ book.title }}</h2>
 
-                <p class="text-gray-600 text-sm mb-2">
+                <p class="text-gray-600 dark:text-slate-400 text-sm mb-2 transition-colors">
                     <span class="font-bold">Автор:</span>
                     {% for author in book.authors.all %}
                         {{ author.full_name }}{% if not forloop.last %}, {% endif %}
                     {% endfor %}
                 </p>
 
-                <p class="text-lg font-bold text-green-600">
+                <p class="text-lg font-bold text-green-600 dark:text-green-400 transition-colors">
                     {{ book.price }} ₽
                 </p>
             </div>
@@ -41,9 +41,34 @@
         {% endfor %}
     </div>
 
+    <!-- Пагинация -->
+    {% if books.has_other_pages %}
+    <div class="flex justify-center items-center gap-2 mt-12">
+        {% if books.has_previous %}
+            <a href="?q={{ query }}&page=1" class="px-3 py-2 rounded-lg bg-blue-600 dark:bg-slate-800 text-white hover:bg-blue-700 dark:hover:bg-slate-700 transition">« Первая</a>
+            <a href="?q={{ query }}&page={{ books.previous_page_number }}" class="px-3 py-2 rounded-lg bg-blue-600 dark:bg-slate-800 text-white hover:bg-blue-700 dark:hover:bg-slate-700 transition">‹ Предыдущая</a>
+        {% endif %}
+
+        <div class="flex gap-1">
+            {% for num in books.paginator.page_range %}
+                {% if pages.number == num %}
+                    <span class="px-3 py-2 rounded-lg bg-blue-700 dark:bg-slate-950 text-white font-bold">{{ num }}</span>
+                {% elif num > books.number|add:'-3' and num < books.number|add:'3' %}
+                    <a href="?q={{ query }}&page={{ num }}" class="px-3 py-2 rounded-lg bg-gray-300 dark:bg-slate-700 text-gray-800 dark:text-slate-300 hover:bg-blue-600 dark:hover:bg-slate-600 hover:text-white transition">{{ num }}</a>
+                {% endif %}
+            {% endfor %}
+        </div>
+
+        {% if books.has_next %}
+            <a href="?q={{ query }}&page={{ books.next_page_number }}" class="px-3 py-2 rounded-lg bg-blue-600 dark:bg-slate-800 text-white hover:bg-blue-700 dark:hover:bg-slate-700 transition">Следующая ›</a>
+            <a href="?q={{ query }}&page={{ books.paginator.num_pages }}" class="px-3 py-2 rounded-lg bg-blue-600 dark:bg-slate-800 text-white hover:bg-blue-700 dark:hover:bg-slate-700 transition">Последняя »</a>
+        {% endif %}
+    </div>
+    {% endif %}
+
     {% else %}
-        <p class="text-center text-2xl mt-20 text-gray-600">
-            По запросу <span class="font-bold text-blue-700">"{{ query }}"</span> ничего не найдено. 😕
+        <p class="text-center text-2xl mt-20 text-gray-600 dark:text-slate-400 transition-colors">
+            По запросу <span class="font-bold text-blue-700 dark:text-blue-400">{{ query }}</span> ничего не найдено. 😕
         </p>
     {% endif %}
 </div>

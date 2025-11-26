@@ -6,7 +6,7 @@
 
 <div class="container mx-auto px-4 max-w-6xl py-10">
 
-    <h1 class="text-3xl font-bold text-gray-900 border-b-4 border-blue-600 pb-2 mb-8">
+    <h1 class="text-3xl font-bold text-gray-900 dark:text-white border-b-4 border-blue-600 dark:border-blue-500 pb-2 mb-8 transition-colors">
         📚 Все книги
     </h1>
 
@@ -15,26 +15,26 @@
         {% for book in books %}
 
         <div class="group">
-            <div class="bg-white rounded-lg overflow-hidden shadow-md hover:shadow-xl transition-all duration-300 transform hover:-translate-y-2 h-full flex flex-col">
+            <div class="bg-white dark:bg-slate-800 rounded-lg overflow-hidden shadow-md hover:shadow-xl dark:shadow-xl dark:hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-2 h-full flex flex-col">
                 
-                <div class="relative overflow-hidden h-64 bg-gray-200">
+                <div class="relative overflow-hidden h-64 bg-gray-200 dark:bg-slate-700">
                     {% if book.photo %}
                         <img src="{{ book.photo.url }}" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300" alt="{{ book.title }}">
                     {% else %}
-                        <div class="w-full h-full flex items-center justify-center bg-gradient-to-br from-gray-300 to-gray-400 text-white text-6xl">📚</div>
+                        <div class="w-full h-full flex items-center justify-center bg-gradient-to-br from-gray-300 to-gray-400 dark:from-slate-600 dark:to-slate-700 text-white text-6xl">📚</div>
                     {% endif %}
                     
                     {% if book.genres.all %}
-                        <div class="absolute top-3 right-3 bg-blue-600 text-white px-3 py-1 rounded-full text-sm font-bold opacity-0 group-hover:opacity-100 transition">
+                        <div class="absolute top-3 right-3 bg-blue-600 dark:bg-slate-950 text-white px-3 py-1 rounded-full text-sm font-bold opacity-0 group-hover:opacity-100 transition">
                             {{ book.genres.all.0.genre }}
                         </div>
                     {% endif %}
                 </div>
 
                 <div class="p-4 flex-grow flex flex-col">
-                    <h3 class="font-bold text-gray-900 line-clamp-2 mb-2 text-sm group-hover:text-blue-600 transition">{{ book.title }}</h3>
+                    <h3 class="font-bold text-gray-900 dark:text-slate-100 line-clamp-2 mb-2 text-sm group-hover:text-blue-600 dark:group-hover:text-blue-400 transition">{{ book.title }}</h3>
 
-                    <p class="text-xs text-gray-500 mb-3">
+                    <p class="text-xs text-gray-500 dark:text-slate-400 mb-3 transition-colors">
                         {% for author in book.authors.all %}
                             <span>{{ author.full_name }}</span>{% if not forloop.last %}, {% endif %}
                         {% endfor %}
@@ -42,12 +42,12 @@
 
                     <div class="mt-auto">
                         {% if book.price %}
-                            <p class="text-2xl font-bold text-green-600 mb-3">{{ book.price }} ₽</p>
+                            <p class="text-2xl font-bold text-green-600 dark:text-green-400 mb-3 transition-colors">{{ book.price }} ₽</p>
                         {% else %}
-                            <p class="text-gray-400 mb-3">Цена не указана</p>
+                            <p class="text-gray-400 dark:text-slate-500 mb-3 transition-colors">Цена не указана</p>
                         {% endif %}
 
-                        <a href="{% url 'detail' book.id %}" class="w-full block bg-gradient-to-r from-blue-600 to-blue-800 text-white font-bold py-2 px-4 rounded-lg hover:from-blue-700 hover:to-blue-900 transition-all transform hover:shadow-lg active:scale-95">
+                        <a href="{% url 'detail' book.id %}" class="w-full block bg-gradient-to-r from-blue-600 to-blue-800 dark:from-slate-900 dark:to-black text-white font-bold py-2 px-4 rounded-lg hover:from-blue-700 hover:to-blue-900 dark:hover:from-slate-800 dark:hover:to-slate-900 transition-all transform hover:shadow-lg active:scale-95">
                             Подробнее
                         </a>
                     </div>
@@ -57,9 +57,35 @@
 
         {% endfor %}
     </div>
+
+    <!-- Пагинация -->
+    {% if books.has_other_pages %}
+    <div class="flex justify-center items-center gap-2 mt-12">
+        {% if books.has_previous %}
+            <a href="?page=1" class="px-3 py-2 rounded-lg bg-blue-600 dark:bg-slate-800 text-white hover:bg-blue-700 dark:hover:bg-slate-700 transition">« Первая</a>
+            <a href="?page={{ books.previous_page_number }}" class="px-3 py-2 rounded-lg bg-blue-600 dark:bg-slate-800 text-white hover:bg-blue-700 dark:hover:bg-slate-700 transition">‹ Предыдущая</a>
+        {% endif %}
+
+        <div class="flex gap-1">
+            {% for num in books.paginator.page_range %}
+                {% if pages.number == num %}
+                    <span class="px-3 py-2 rounded-lg bg-blue-700 dark:bg-slate-950 text-white font-bold">{{ num }}</span>
+                {% elif num > books.number|add:'-3' and num < books.number|add:'3' %}
+                    <a href="?page={{ num }}" class="px-3 py-2 rounded-lg bg-gray-300 dark:bg-slate-700 text-gray-800 dark:text-slate-300 hover:bg-blue-600 dark:hover:bg-slate-600 hover:text-white transition">{{ num }}</a>
+                {% endif %}
+            {% endfor %}
+        </div>
+
+        {% if books.has_next %}
+            <a href="?page={{ books.next_page_number }}" class="px-3 py-2 rounded-lg bg-blue-600 dark:bg-slate-800 text-white hover:bg-blue-700 dark:hover:bg-slate-700 transition">Следующая ›</a>
+            <a href="?page={{ books.paginator.num_pages }}" class="px-3 py-2 rounded-lg bg-blue-600 dark:bg-slate-800 text-white hover:bg-blue-700 dark:hover:bg-slate-700 transition">Последняя »</a>
+        {% endif %}
+    </div>
+    {% endif %}
+
     {% else %}
         <div class="text-center py-20">
-            <p class="text-gray-500 text-xl">😕 Пока книг нет</p>
+            <p class="text-gray-500 dark:text-slate-400 text-xl transition-colors">😕 Пока книг нет</p>
         </div>
     {% endif %}
 </div>

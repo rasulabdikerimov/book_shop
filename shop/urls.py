@@ -5,4 +5,12 @@ urlpatterns = [
     path('search/', views.search_results, name='search_results'),
     path('popular-books/', views.popular_books, name='popular_books'),
     path('book/<int:book_id>/', views.book_detail, name='detail'),
+    path('author/<int:author_id>/', views.author_detail, name='author_detail'),
+    path('genre/<int:genre_id>/', views.category_books, name='category_books'),
+    path('language/<int:language_id>/', views.language_books, name='language_books'),
+    path('register/', views.registration, name='registration'),
+    path('login/', views.login_view, name='login'),
+    path('logout/', views.logout_view, name='logout'),
+    path('profile/', views.profile, name='profile'),
+    path('profile/edit/', views.update_profile, name='update_profile'),
     ]
