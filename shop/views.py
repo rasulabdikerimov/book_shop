@@ -6,6 +6,7 @@ from django.db.models import Q
 from django.core.paginator import Paginator
 from .forms import CustomUserCreationForm, ReviewForm,CustomUserChangeForm
 from django.contrib.auth import login,authenticate,logout
+from django.http import JsonResponse
 def homepage(request):
     books = Book.objects.all()[:4]
     genres = Genres.objects.all()[:6]
@@ -177,3 +178,132 @@ def update_profile(request):
     return render(request, 'users/update_profile.html', context)
 
 
+def _get_cart(session):
+    """Return cart dict from session. Structure: {book_id: quantity} """
+    return session.get('cart', {})
+
+
+def _save_cart(session, cart):
+    session['cart'] = cart
+    session.modified = True
+
+
+def add_to_cart(request, book_id):
+    # Only support POST
+    if request.method != 'POST':
+        return redirect('detail', book_id=book_id)
+
+    cart = _get_cart(request.session)
+    qty = int(request.POST.get('quantity', 1))
+    # ensure qty >=1
+    if qty < 1:
+        qty = 1
+
+    book = get_object_or_404(Book, id=book_id)
+    cart[str(book_id)] = cart.get(str(book_id), 0) + qty
+    _save_cart(request.session, cart)
+
+    # If request is AJAX, return JSON
+    if request.headers.get('x-requested-with') == 'XMLHttpRequest':
+        return JsonResponse({'ok': True, 'cart_count': sum(cart.values())})
+
+    return redirect('cart')
+
+
+def cart_view(request):
+    cart = _get_cart(request.session)
+    items = []
+    total = 0
+    book_ids = [int(k) for k in cart.keys()]
+    books = Book.objects.filter(id__in=book_ids)
+    books_map = {b.id: b for b in books}
+    for k, v in cart.items():
+        bid = int(k)
+        book = books_map.get(bid)
+        if not book:
+            continue
+        quantity = int(v)
+        subtotal = (book.price or 0) * quantity
+        total += subtotal
+        items.append({'book': book, 'quantity': quantity, 'subtotal': subtotal})
+
+    context = {'items': items, 'total': total}
+    return render(request, 'shop/cart.html', context)
+
+
+def update_cart(request):
+    # expects POST with pairs book_id -> quantity
+    if request.method != 'POST':
+        return redirect('cart')
+
+    cart = _get_cart(request.session)
+    changed = False
+    for key, val in request.POST.items():
+        if not key.startswith('qty_'):
+            continue
+        try:
+            book_id = key.split('_', 1)[1]
+            qty = int(val)
+        except Exception:
+            continue
+        if qty <= 0:
+            if book_id in cart:
+                del cart[book_id]
+                changed = True
+        else:
+            cart[book_id] = qty
+            changed = True
+
+    if changed:
+        _save_cart(request.session, cart)
+
+    return redirect('cart')
+
+
+def remove_from_cart(request, book_id):
+    cart = _get_cart(request.session)
+    book_id = str(book_id)
+    if book_id in cart:
+        del cart[book_id]
+        _save_cart(request.session, cart)
+    return redirect('cart')
+
+
+def saved_books(request):
+    if not request.user.is_authenticated:
+        return redirect('login')
+    
+    if request.method == 'POST':
+        book_id = request.POST.get('book_id')
+        book = get_object_or_404(Book, id=book_id)
+        if book in request.user.saved_books.all():
+            request.user.saved_books.remove(book)
+        else:
+            request.user.saved_books.add(book)
+        return redirect('saved_books')
+    
+    books = request.user.saved_books.all()
+    
+    context = {
+        'books': books,
+    }
+    return render(request, 'shop/saved_books.html', context)
+
+def cart(request):
+    if not request.user.is_authenticated:
+        return redirect('login')
+    if request.method == 'POST':
+        book_id = request.POST.get('book_id')
+        book = get_object_or_404(Book, id=book_id)
+        if book in request.user.cart_books.all():
+            request.user.cart_books.remove(book)
+        else:
+            request.user.cart_books.add(book)
+        return redirect('cart')
+    
+    books = request.user.cart_books.all()
+    
+    context = {
+        'books': books,
+    }
+    return render(request, 'shop/cart.html', context)

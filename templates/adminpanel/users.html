@@ -1,0 +1,27 @@
+{% extends 'adminpanel/base.html' %}
+{% block title %}Users — Admin{% endblock %}
+{% block header %}Пользователи{% endblock %}
+{% block content %}
+<div class="panel">
+    <div class="table-wrap">
+        <table>
+            <thead>
+                <tr><th>ID</th><th>Email</th><th>Username</th><th>Phone</th><th>Actions</th></tr>
+            </thead>
+            <tbody>
+                {% for u in users %}
+                <tr>
+                    <td>{{ u.id }}</td>
+                    <td>{{ u.email }}</td>
+                    <td>{{ u.username }}</td>
+                    <td>{{ u.phone_number }}</td>
+                    <td>
+                        <a href="/admin/shop/customuser/{{ u.id }}/change/" class="btn small">Edit</a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

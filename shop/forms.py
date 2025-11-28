@@ -26,3 +26,4 @@ class ReviewForm(forms.ModelForm):
                 'class': 'w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-blue-600 focus:outline-none resize-none dark:bg-slate-700 dark:border-slate-600 dark:text-white'
             })
         }
+

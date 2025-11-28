@@ -1,0 +1,6 @@
+{% extends "base.html" %}
+{% block title %}Saved Books{% endblock %}
+{% for book in books %}
+    {{ book.title }}
+
+{% block content %}

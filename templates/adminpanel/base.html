@@ -1,0 +1,42 @@
+{% load static %}
+<!doctype html>
+<html lang="ru">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>{% block title %}Adminpanel{% endblock %} — Mylibrary</title>
+    <link rel="stylesheet" href="{% static 'adminpanel/admin.css' %}">
+</head>
+<body>
+    <div class="admin-shell">
+        <aside class="admin-sidebar">
+            <div class="brand">Mylibrary <span class="muted">Admin</span></div>
+            <nav>
+                <a href="{% url 'adminpanel:dashboard' %}" class="nav-item">Dashboard</a>
+                <a href="{% url 'adminpanel:books' %}" class="nav-item">Books</a>
+                <a href="{% url 'adminpanel:users' %}" class="nav-item">Users</a>
+                <a href="{% url 'adminpanel:orders' %}" class="nav-item">Orders</a>
+                <a href="{% url 'adminpanel:reviews' %}" class="nav-item">Reviews</a>
+                <a href="{% url 'homepage' %}" class="nav-item">Back to site</a>
+            </nav>
+            <div class="sidebar-footer">Signed in as <strong>{{ request.user.username }}</strong></div>
+        </aside>
+
+        <main class="admin-main">
+            <header class="admin-header">
+                <h1>{% block header %}Admin{% endblock %}</h1>
+                <div class="actions">
+                    <a href="{% url 'admin:index' %}" class="btn">Django admin</a>
+                    <a href="{% url 'logout' %}" class="btn muted">Logout</a>
+                </div>
+            </header>
+
+            <section class="admin-content">
+                {% block content %}{% endblock %}
+            </section>
+        </main>
+    </div>
+
+    <script src="{% static 'adminpanel/admin.js' %}"></script>
+</body>
+</html>

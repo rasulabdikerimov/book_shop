@@ -1,0 +1,68 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Корзина - Mylibrary{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 max-w-6xl py-12">
+    <h1 class="text-4xl font-bold text-gray-900 dark:text-white mb-6">🧺 Ваша корзина</h1>
+
+    {% if items %}
+    <form method="POST" action="{% url 'update_cart' %}">
+        {% csrf_token %}
+        <div class="bg-white dark:bg-slate-800 rounded-lg shadow-lg p-6 mb-6 transition-colors">
+            <div class="grid grid-cols-12 gap-4 items-center">
+                <div class="col-span-6 font-bold text-gray-700 dark:text-slate-200">Товар</div>
+                <div class="col-span-2 text-center font-bold text-gray-700 dark:text-slate-200">Цена</div>
+                <div class="col-span-2 text-center font-bold text-gray-700 dark:text-slate-200">Кол-во</div>
+                <div class="col-span-2 text-right font-bold text-gray-700 dark:text-slate-200">Итого</div>
+            </div>
+            <hr class="my-4 border-gray-200 dark:border-slate-700">
+
+            {% for it in items %}
+            <div class="grid grid-cols-12 gap-4 items-center py-3 border-b border-gray-100 dark:border-slate-700">
+                <div class="col-span-6 flex items-center gap-4">
+                    {% if it.book.photo %}
+                        <img src="{{ it.book.photo.url }}" class="w-20 h-28 object-cover rounded" alt="{{ it.book.title }}">
+                    {% else %}
+                        <div class="w-20 h-28 bg-gray-200 dark:bg-slate-700 rounded flex items-center justify-center">📚</div>
+                    {% endif %}
+                    <div>
+                        <a href="{% url 'detail' it.book.id %}" class="font-semibold text-gray-900 dark:text-white hover:text-blue-600 dark:hover:text-blue-400">{{ it.book.title }}</a>
+                        <p class="text-sm text-gray-500 dark:text-slate-400">{% for a in it.book.authors.all %}{% if not forloop.first %}, {% endif %}<a href="{% url 'author_detail' a.id %}" class="hover:text-blue-600 dark:hover:text-blue-400">{{ a.full_name }}</a>{% endfor %}</p>
+                    </div>
+                </div>
+
+                <div class="col-span-2 text-center text-gray-700 dark:text-slate-200">{{ it.book.price }} ₽</div>
+
+                <div class="col-span-2 text-center">
+                    <input type="number" min="0" name="qty_{{ it.book.id }}" value="{{ it.quantity }}" class="w-20 mx-auto text-center rounded border-2 border-gray-200 dark:border-slate-700 px-2 py-1 bg-white dark:bg-slate-700 text-gray-900 dark:text-white">
+                </div>
+
+                <div class="col-span-2 text-right text-gray-900 dark:text-white font-bold">{{ it.subtotal }} ₽</div>
+            </div>
+            {% endfor %}
+
+            <div class="flex justify-between items-center mt-6">
+                <a href="{% url 'homepage' %}" class="text-gray-600 dark:text-slate-300 hover:underline">← Продолжить покупки</a>
+
+                <div class="text-right">
+                    <p class="text-sm text-gray-500 dark:text-slate-400">Итого:</p>
+                    <p class="text-2xl font-bold text-gray-900 dark:text-white">{{ total }} ₽</p>
+                </div>
+            </div>
+
+            <div class="flex gap-3 mt-6">
+                <button type="submit" class="bg-gray-500 dark:bg-slate-700 text-white font-bold py-3 px-6 rounded-lg hover:bg-gray-600 dark:hover:bg-slate-600 transition">Обновить корзину</button>
+                <a href="#" class="bg-green-600 text-white font-bold py-3 px-6 rounded-lg hover:bg-green-700 transition">Перейти к оплате</a>
+            </div>
+        </div>
+    </form>
+    {% else %}
+    <div class="bg-white dark:bg-slate-800 rounded-lg shadow-lg p-8 text-center">
+        <p class="text-xl text-gray-700 dark:text-slate-300">В вашей корзине пока нет товаров</p>
+        <a href="{% url 'homepage' %}" class="mt-4 inline-block bg-blue-600 dark:bg-slate-900 text-white py-3 px-6 rounded-lg hover:bg-blue-700 dark:hover:bg-slate-800 transition">Начать покупки</a>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
