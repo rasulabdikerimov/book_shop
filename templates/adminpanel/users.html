@@ -16,7 +16,8 @@
                     <td>{{ u.username }}</td>
                     <td>{{ u.phone_number }}</td>
                     <td>
-                        <a href="/admin/shop/customuser/{{ u.id }}/change/" class="btn small">Edit</a>
+                        <a href="{% url 'adminpanel:user_edit' u.id %}" class="btn small">Edit</a>
+                        <a href="{% url 'adminpanel:user_toggle' u.id %}" class="btn small muted">{% if u.is_active %}Disable{% else %}Enable{% endif %}</a>
                     </td>
                 </tr>
                 {% endfor %}

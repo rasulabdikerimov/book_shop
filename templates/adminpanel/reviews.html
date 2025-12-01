@@ -16,7 +16,10 @@
                     <td>{{ r.book.title }}</td>
                     <td>{{ r.stars }}</td>
                     <td class="comment">{{ r.comment|truncatechars:80 }}</td>
-                    <td><a href="/admin/shop/review/{{ r.id }}/change/" class="btn small">Edit</a></td>
+                    <td>
+                        <a href="{% url 'adminpanel:review_edit' r.id %}" class="btn small">Edit</a>
+                        <a href="{% url 'adminpanel:review_delete' r.id %}" class="btn small muted">Delete</a>
+                    </td>
                 </tr>
                 {% endfor %}
             </tbody>

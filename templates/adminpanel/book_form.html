@@ -1,0 +1,17 @@
+{% extends 'adminpanel/base.html' %}
+{% block title %}{{ title }} — Admin{% endblock %}
+{% block header %}{{ title }}{% endblock %}
+{% block content %}
+<div class="panel">
+    <form method="POST" enctype="multipart/form-data">
+        {% csrf_token %}
+        <div class="grid gap-4">
+            {{ form.as_p }}
+        </div>
+        <div class="mt-4">
+            <button class="btn">Сохранить</button>
+            <a href="{% url 'adminpanel:books' %}" class="btn small muted">Отмена</a>
+        </div>
+    </form>
+</div>
+{% endblock %}
