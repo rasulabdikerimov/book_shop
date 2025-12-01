@@ -1,0 +1,29 @@
+{% extends 'adminpanel/base.html' %}
+{% block title %}Reviews — Admin{% endblock %}
+{% block header %}Отзывы{% endblock %}
+{% block content %}
+<div class="panel">
+    <div class="table-wrap">
+        <table>
+            <thead>
+                <tr><th>ID</th><th>User</th><th>Book</th><th>Stars</th><th>Comment</th><th>Actions</th></tr>
+            </thead>
+            <tbody>
+                {% for r in reviews %}
+                <tr>
+                    <td>{{ r.id }}</td>
+                    <td>{{ r.user.email }}</td>
+                    <td>{{ r.book.title }}</td>
+                    <td>{{ r.stars }}</td>
+                    <td class="comment">{{ r.comment|truncatechars:80 }}</td>
+                    <td>
+                        <a href="{% url 'adminpanel:review_edit' r.id %}" class="btn small">Edit</a>
+                        <a href="{% url 'adminpanel:review_delete' r.id %}" class="btn small muted">Delete</a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

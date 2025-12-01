@@ -1,0 +1,41 @@
+{% extends 'adminpanel/base.html' %}
+
+{% block title %}Dashboard — Admin{% endblock %}
+
+{% block header %}Панель управления{% endblock %}
+
+{% block content %}
+<div class="cards">
+    <div class="card">
+        <h3>Книги</h3>
+        <p class="big">{{ books_count }}</p>
+    </div>
+    <div class="card">
+        <h3>Пользователи</h3>
+        <p class="big">{{ users_count }}</p>
+    </div>
+    <div class="card">
+        <h3>Заказы</h3>
+        <p class="big">{{ orders_count }}</p>
+    </div>
+    <div class="card">
+        <h3>Отзывы</h3>
+        <p class="big">{{ reviews_count }}</p>
+    </div>
+</div>
+
+<div class="panel mt-6">
+    <h2>Последние книги</h2>
+    <div class="table-wrap">
+        <table>
+            <thead>
+                <tr><th>Id</th><th>Title</th><th>Price</th><th>Actions</th></tr>
+            </thead>
+            <tbody>
+                {% for book in books.latest|default:None %}
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

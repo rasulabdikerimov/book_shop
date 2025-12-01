@@ -1,0 +1,25 @@
+{% extends 'adminpanel/base.html' %}
+{% block title %}Orders — Admin{% endblock %}
+{% block header %}Заказы{% endblock %}
+{% block content %}
+<div class="panel">
+    <div class="table-wrap">
+        <table>
+            <thead>
+                <tr><th>#</th><th>User</th><th>Total</th><th>Created</th><th>Actions</th></tr>
+            </thead>
+            <tbody>
+                {% for o in orders %}
+                <tr>
+                    <td>{{ o.order_number }}</td>
+                    <td>{{ o.user.email }}</td>
+                    <td>{{ o.total_price }} ₽</td>
+                    <td>{{ o.created_at|date:"d.m.Y H:i" }}</td>
+                    <td><a href="/admin/shop/order/{{ o.id }}/change/" class="btn small">View</a></td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

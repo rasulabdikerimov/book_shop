@@ -1,0 +1,39 @@
+{% extends 'adminpanel/base.html' %}
+{% block title %}Books — Admin{% endblock %}
+{% block header %}Книги{% endblock %}
+{% block content %}
+<div class="panel">
+    <div class="mb-4 flex justify-between items-center">
+        <h2 class="m-0">Список книг</h2>
+        <a href="{% url 'adminpanel:book_create' %}" class="btn">+ Добавить книгу</a>
+    </div>
+    <div class="table-wrap">
+        <table>
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Title</th>
+                    <th>Authors</th>
+                    <th>Price</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for book in books %}
+                <tr>
+                    <td>{{ book.id }}</td>
+                    <td><a href="{% url 'detail' book.id %}" class="muted-link">{{ book.title }}</a></td>
+                    <td>{% for a in book.authors.all %}{{ a.full_name }}{% if not forloop.last %}, {% endif %}{% endfor %}</td>
+                    <td>{{ book.price }} ₽</td>
+                    <td>
+                        <a href="{% url 'adminpanel:book_edit' book.id %}" class="btn small">Edit</a>
+                        <a href="{% url 'detail' book.id %}" class="btn small muted">View</a>
+                        <a href="{% url 'adminpanel:book_delete' book.id %}" class="btn small muted">Delete</a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

@@ -35,9 +35,16 @@
                 <div class="bg-white rounded-lg p-6 shadow-lg">
                     <p class="text-4xl font-bold text-green-600 mb-4">{{ book.price }} ₽</p>
 
-                    <button class="w-full bg-gradient-to-r from-blue-600 to-blue-800 text-white font-bold py-3 px-4 rounded-lg hover:from-blue-700 hover:to-blue-900 transition-all transform hover:shadow-lg active:scale-95 mb-3">
-                        🛒 Добавить в корзину
-                    </button>
+                    <form method="POST" action="{% url 'add_to_cart' book.id %}" class="mb-3">
+                        {% csrf_token %}
+                        <div class="flex gap-2 items-center mb-3">
+                            <label class="text-sm text-gray-600 dark:text-slate-400">Количество</label>
+                            <input type="number" name="quantity" value="1" min="1" class="w-20 px-3 py-2 rounded border-2 border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-700 text-gray-900 dark:text-white">
+                        </div>
+                        <button type="submit" class="w-full bg-gradient-to-r from-blue-600 to-blue-800 text-white font-bold py-3 px-4 rounded-lg hover:from-blue-700 hover:to-blue-900 transition-all transform hover:shadow-lg active:scale-95">
+                            🛒 Добавить в корзину
+                        </button>
+                    </form>
 
                     <button class="w-full border-2 border-blue-600 text-blue-600 font-bold py-3 px-4 rounded-lg hover:bg-blue-50 transition mb-3">
                         ❤️ Добавить в избранное
