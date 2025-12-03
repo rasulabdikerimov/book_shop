@@ -22,12 +22,12 @@
                 {% for book in books %}
                 <tr>
                     <td>{{ book.id }}</td>
-                    <td><a href="{% url 'detail' book.id %}" class="muted-link">{{ book.title }}</a></td>
+                    <td><a href="{% url 'detail' book.slug %}" class="muted-link">{{ book.title }}</a></td>
                     <td>{% for a in book.authors.all %}{{ a.full_name }}{% if not forloop.last %}, {% endif %}{% endfor %}</td>
                     <td>{{ book.price }} ₽</td>
                     <td>
                         <a href="{% url 'adminpanel:book_edit' book.id %}" class="btn small">Edit</a>
-                        <a href="{% url 'detail' book.id %}" class="btn small muted">View</a>
+                        <a href="{% url 'detail' book.slug %}" class="btn small muted">View</a>
                         <a href="{% url 'adminpanel:book_delete' book.id %}" class="btn small muted">Delete</a>
                     </td>
                 </tr>
