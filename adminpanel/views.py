@@ -133,3 +133,39 @@ def user_toggle(request, user_id):
 	u.is_active = not u.is_active
 	u.save()
 	return redirect('adminpanel:users')
+
+
+@_staff_required
+def order_detail(request, order_id):
+
+	order = get_object_or_404(Order, id=order_id)
+	books = order.book.all()
+	payment = order.payment_set.first()
+	
+	context = {
+		'order': order,
+		'books': books,
+		'payment': payment,
+	}
+	return render(request, 'adminpanel/order_detail.html', context)
+
+
+@_staff_required
+def order_update_status(request, order_id):
+
+	order = get_object_or_404(Order, id=order_id)
+	payment = order.payment_set.first()
+	
+	if request.method == 'POST':
+		new_status = request.POST.get('status')
+		if new_status and payment:
+			payment.status = new_status
+			payment.save()
+		return redirect('adminpanel:order_detail', order_id=order.id)
+	
+	context = {
+		'order': order,
+		'payment': payment,
+		'statuses': ['В ожидании', 'Завершен', 'Отменен'],
+	}
+	return render(request, 'adminpanel/order_update_status.html', context)

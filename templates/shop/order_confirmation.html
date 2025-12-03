@@ -1,0 +1,96 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Заказ подтвержден - Mylibrary{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 max-w-2xl py-12">
+    <!-- Успешный заказ -->
+    <div class="bg-white dark:bg-slate-800 rounded-lg shadow-lg p-8 text-center mb-8">
+        <div class="text-6xl mb-4">✅</div>
+        <h1 class="text-4xl font-bold text-gray-900 dark:text-white mb-2">Заказ подтвержден!</h1>
+        <p class="text-lg text-gray-600 dark:text-slate-400">Спасибо за ваш заказ</p>
+    </div>
+
+    <!-- Информация о заказе -->
+    <div class="bg-white dark:bg-slate-800 rounded-lg shadow-lg p-6 mb-6">
+        <div class="grid grid-cols-2 gap-4 mb-6">
+            <div>
+                <p class="text-sm text-gray-600 dark:text-slate-400 mb-1">Номер заказа</p>
+                <p class="text-2xl font-bold text-gray-900 dark:text-white">#{{ order.order_number }}</p>
+            </div>
+            <div>
+                <p class="text-sm text-gray-600 dark:text-slate-400 mb-1">Дата заказа</p>
+                <p class="text-lg font-semibold text-gray-900 dark:text-white">{{ order.created_at|date:"d.m.Y H:i" }}</p>
+            </div>
+            <div>
+                <p class="text-sm text-gray-600 dark:text-slate-400 mb-1">Сумма</p>
+                <p class="text-2xl font-bold text-green-600 dark:text-green-400">{{ order.total_price }} ₽</p>
+            </div>
+            <div>
+                <p class="text-sm text-gray-600 dark:text-slate-400 mb-1">Статус платежа</p>
+                <p class="text-lg font-semibold">
+                    {% if payment.status == 'В ожидании' %}
+                        <span class="inline-block bg-yellow-100 dark:bg-yellow-900 text-yellow-800 dark:text-yellow-200 px-3 py-1 rounded-full text-sm">⏳ В ожидании</span>
+                    {% elif payment.status == 'Завершен' %}
+                        <span class="inline-block bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200 px-3 py-1 rounded-full text-sm">✅ Завершен</span>
+                    {% else %}
+                        <span class="inline-block bg-red-100 dark:bg-red-900 text-red-800 dark:text-red-200 px-3 py-1 rounded-full text-sm">❌ {{ payment.status }}</span>
+                    {% endif %}
+                </p>
+            </div>
+        </div>
+
+        <div class="border-t border-gray-200 dark:border-slate-700 pt-6">
+            <h3 class="text-lg font-bold text-gray-900 dark:text-white mb-3">📦 Заказанные товары</h3>
+            <div class="space-y-3">
+                {% for book in books %}
+                <div class="flex items-center justify-between pb-3 border-b border-gray-100 dark:border-slate-700 last:border-b-0">
+                    <div>
+                        <p class="font-semibold text-gray-900 dark:text-white">{{ book.title }}</p>
+                        <p class="text-sm text-gray-600 dark:text-slate-400">
+                            {% for author in book.authors.all %}
+                                {{ author.full_name }}{% if not forloop.last %}, {% endif %}
+                            {% endfor %}
+                        </p>
+                    </div>
+                    <p class="text-lg font-bold text-green-600 dark:text-green-400">{{ book.price }} ₽</p>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+
+        {% if payment %}
+        <div class="border-t border-gray-200 dark:border-slate-700 pt-6 mt-6">
+            <h3 class="text-lg font-bold text-gray-900 dark:text-white mb-3">💳 Информация об оплате</h3>
+            <div class="space-y-2">
+                <p class="text-gray-600 dark:text-slate-400"><span class="font-semibold">Способ оплаты:</span> {{ payment.get_payment_method_display }}</p>
+                <p class="text-gray-600 dark:text-slate-400"><span class="font-semibold">Сумма:</span> {{ payment.amount }} ₽</p>
+                <p class="text-gray-600 dark:text-slate-400"><span class="font-semibold">Статус:</span> {{ payment.status }}</p>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Следующие шаги -->
+    <div class="bg-blue-50 dark:bg-slate-900 border-l-4 border-blue-600 dark:border-blue-500 p-6 rounded mb-6">
+        <h3 class="text-lg font-bold text-gray-900 dark:text-white mb-3">📋 Что дальше?</h3>
+        <ul class="space-y-2 text-gray-700 dark:text-slate-300">
+            <li>✓ Мы отправим подтверждение на вашу почту</li>
+            <li>✓ Ожидайте информацию о доставке в течение 24 часов</li>
+            <li>✓ Вы сможете отследить заказ в личном кабинете</li>
+            <li>✓ Если у вас есть вопросы, свяжитесь с поддержкой</li>
+        </ul>
+    </div>
+
+    <!-- Действия -->
+    <div class="flex gap-4 justify-center">
+        <a href="{% url 'homepage' %}" class="bg-blue-600 dark:bg-slate-900 text-white font-bold py-3 px-8 rounded-lg hover:bg-blue-700 dark:hover:bg-slate-800 transition-all">
+            ← Продолжить покупки
+        </a>
+        <a href="{% url 'profile' %}" class="bg-gray-600 dark:bg-slate-700 text-white font-bold py-3 px-8 rounded-lg hover:bg-gray-700 dark:hover:bg-slate-600 transition-all">
+            📊 Мой профиль
+        </a>
+    </div>
+</div>
+{% endblock %}

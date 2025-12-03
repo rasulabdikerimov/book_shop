@@ -4,6 +4,8 @@ from pyexpat import model
 from statistics import mode
 from django.db import models
 from django.contrib.auth.models import AbstractUser
+from django.utils.text import slugify
+from django.urls import reverse
 import random
 # Create your models here.
 
@@ -25,25 +27,68 @@ class CustomUser(AbstractUser):
 
 class Genres(models.Model):
     genre = models.CharField(max_length=100)
+    slug = models.SlugField(max_length=120, unique=True, null=True, blank=True)
 
     def __str__(self) -> str:
         return self.genre
+    
+    def save(self, *args, **kwargs):
+        if not self.slug:
+            base = slugify(self.genre)
+            slug = base
+            i = 1
+            while Genres.objects.filter(slug=slug).exists():
+                slug = f"{base}-{i}"
+                i += 1
+            self.slug = slug
+        super().save(*args, **kwargs)
+
+    def get_absolute_url(self):
+        return reverse('category_books', kwargs={'genre_slug': self.slug})
 class Languages(models.Model):
     language = models.CharField(max_length=100)
+    slug = models.SlugField(max_length=120, unique=True, null=True, blank=True)
 
     def __str__(self) -> str:
         return self.language
     
+    def save(self, *args, **kwargs):
+        if not self.slug:
+            base = slugify(self.language)
+            slug = base
+            i = 1
+            while Languages.objects.filter(slug=slug).exists():
+                slug = f"{base}-{i}"
+                i += 1
+            self.slug = slug
+        super().save(*args, **kwargs)
+
+    def get_absolute_url(self):
+        return reverse('language_books', kwargs={'language_slug': self.slug})
+    
 class Countries(models.Model):
     country = models.CharField(max_length=100)
+    slug = models.SlugField(max_length=120, unique=True, null=True, blank=True)
 
     def __str__(self) -> str:
         return self.country
+    
+    def save(self, *args, **kwargs):
+        if not self.slug:
+            base = slugify(self.country)
+            slug = base
+            i = 1
+            while Countries.objects.filter(slug=slug).exists():
+                slug = f"{base}-{i}"
+                i += 1
+            self.slug = slug
+        super().save(*args, **kwargs)
     
 
 class Authors(models.Model):
     full_name = models.CharField(max_length=100,
                                  verbose_name='ФИО автора:')
+    slug = models.SlugField(max_length=140, unique=True, null=True, blank=True)
     birth_date = models.CharField(max_length=100,
                                   verbose_name='Дата рождения автора:',help_text='Формат: ДД.ММ.ГГГГ')
     country = models.ForeignKey(Countries, on_delete=models.CASCADE,
@@ -56,6 +101,20 @@ class Authors(models.Model):
 
     def __str__(self):
         return self.full_name
+    
+    def save(self, *args, **kwargs):
+        if not self.slug:
+            base = slugify(self.full_name)
+            slug = base
+            i = 1
+            while Authors.objects.filter(slug=slug).exists():
+                slug = f"{base}-{i}"
+                i += 1
+            self.slug = slug
+        super().save(*args, **kwargs)
+
+    def get_absolute_url(self):
+        return reverse('author_detail', kwargs={'author_slug': self.slug})
     
 class Review(models.Model):
     user = models.ForeignKey(CustomUser, on_delete=models.CASCADE, verbose_name='Пользователь:')
@@ -79,6 +138,7 @@ class ReviewImage(models.Model):
 class Book(models.Model):
     title = models.CharField(max_length=100,
                              verbose_name='Названия книги:')
+    slug = models.SlugField(max_length=150, unique=True, null=True, blank=True)
     description = models.TextField(verbose_name='Описания книги:')
     pub_date = models.CharField(verbose_name='Дата публикации:',max_length=4,help_text='Формат: ГГГГ')
     price = models.IntegerField(verbose_name='Цена книги:')
@@ -90,6 +150,20 @@ class Book(models.Model):
 
     def __str__(self) -> str:
         return self.title
+    
+    def save(self, *args, **kwargs):
+        if not self.slug:
+            base = slugify(self.title)
+            slug = base
+            i = 1
+            while Book.objects.filter(slug=slug).exists():
+                slug = f"{base}-{i}"
+                i += 1
+            self.slug = slug
+        super().save(*args, **kwargs)
+
+    def get_absolute_url(self):
+        return reverse('detail', kwargs={'book_slug': self.slug})
     
 class Cart(models.Model):
     user = models.ForeignKey(CustomUser, on_delete=models.CASCADE,

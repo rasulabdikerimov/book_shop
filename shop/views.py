@@ -1,6 +1,6 @@
 
 from django.shortcuts import redirect, render,get_object_or_404
-from .models import Book, Genres, Authors, Languages, Countries, Review, ReviewImage, CustomUser
+from .models import Book, Genres, Authors, Languages, Countries, Review, ReviewImage, CustomUser, Order, Payment
 # Create your views here.
 from django.db.models import Q
 from django.core.paginator import Paginator
@@ -30,25 +30,109 @@ def popular_books(request):
 
 
 def search_results(request):
-    query = request.GET.get('q', '')
-    books_list = Book.objects.filter(
-        Q(title__icontains=query)|
-        Q(authors__full_name__icontains=query)
-        ).distinct()
+    from urllib.parse import urlencode
     
-    paginator = Paginator(books_list, 8)
-    page_number = request.GET.get('page')
+
+    q = request.GET.get('q', '').strip()
+    min_price = request.GET.get('min_price', '').strip()
+    max_price = request.GET.get('max_price', '').strip()
+    year_from = request.GET.get('year_from', '').strip()
+    year_to = request.GET.get('year_to', '').strip()
+    author_slug = request.GET.get('author', '').strip()
+    genre_slug = request.GET.get('genre', '').strip()
+    language_slug = request.GET.get('language', '').strip()
+
+    books_qs = Book.objects.all()
+    
+   
+    if q:
+        books_qs = books_qs.filter(
+            Q(title__icontains=q) |
+            Q(authors__full_name__icontains=q)
+        )
+    
+ 
+    if min_price:
+        try:
+            books_qs = books_qs.filter(price__gte=int(min_price))
+        except (ValueError, TypeError):
+            pass
+    
+    if max_price:
+        try:
+            books_qs = books_qs.filter(price__lte=int(max_price))
+        except (ValueError, TypeError):
+            pass
+    
+
+    if year_from:
+        books_qs = books_qs.filter(pub_date__gte=year_from)
+    
+    if year_to:
+        books_qs = books_qs.filter(pub_date__lte=year_to)
+    
+ 
+    if author_slug:
+        books_qs = books_qs.filter(authors__slug=author_slug)
+    
+    if genre_slug:
+        books_qs = books_qs.filter(genres__slug=genre_slug)
+    
+    if language_slug:
+        books_qs = books_qs.filter(languages__slug=language_slug)
+
+
+    books_qs = books_qs.distinct()
+
+
+    paginator = Paginator(books_qs, 8)
+    page_number = request.GET.get('page', 1)
     books = paginator.get_page(page_number)
+
+    authors = Authors.objects.all()
+    genres = Genres.objects.all()
+    languages = Languages.objects.all()
+
+    query_params = {}
+    if q:
+        query_params['q'] = q
+    if min_price:
+        query_params['min_price'] = min_price
+    if max_price:
+        query_params['max_price'] = max_price
+    if year_from:
+        query_params['year_from'] = year_from
+    if year_to:
+        query_params['year_to'] = year_to
+    if author_slug:
+        query_params['author'] = author_slug
+    if genre_slug:
+        query_params['genre'] = genre_slug
+    if language_slug:
+        query_params['language'] = language_slug
     
+    base_query = urlencode(query_params) if query_params else ''
+
     context = {
         'books': books,
-        'query': query,
+        'query': q,
+        'min_price': min_price,
+        'max_price': max_price,
+        'year_from': year_from,
+        'year_to': year_to,
+        'selected_author': author_slug,
+        'selected_genre': genre_slug,
+        'selected_language': language_slug,
+        'authors': authors,
+        'genres': genres,
+        'languages': languages,
+        'base_query': base_query,
     }
     return render(request, 'shop/search_results.html', context)
-def book_detail(request, book_id):
-    book = get_object_or_404(Book, id=book_id)
+def book_detail(request, book_slug):
+    book = get_object_or_404(Book, slug=book_slug)
     reviews = Review.objects.filter(book=book).select_related('user')
-    related_books = Book.objects.filter(genres__in=book.genres.all()).exclude(id=book_id).distinct()[:4]
+    related_books = Book.objects.filter(genres__in=book.genres.all()).exclude(id=book.id).distinct()[:4]
 
     review_form = ReviewForm()
     
@@ -67,7 +151,7 @@ def book_detail(request, book_id):
             for img in request.FILES.getlist('images'):
                 ReviewImage.objects.create(review=new_review, image=img)
             
-            return redirect('detail', book_id=book.id)
+            return redirect('detail', book_slug=book.slug)
     
     context = {
         'book': book,
@@ -77,8 +161,8 @@ def book_detail(request, book_id):
     }
     return render(request, 'shop/book_detail.html', context)
 
-def author_detail(request, author_id):
-    author = get_object_or_404(Authors, id=author_id)
+def author_detail(request, author_slug):
+    author = get_object_or_404(Authors, slug=author_slug)
     books = Book.objects.filter(authors=author)
     
     context = {
@@ -88,8 +172,8 @@ def author_detail(request, author_id):
     return render(request, 'shop/author_detail.html', context)
 
 
-def category_books(request, genre_id):
-    genre = get_object_or_404(Genres, id=genre_id)
+def category_books(request, genre_slug):
+    genre = get_object_or_404(Genres, slug=genre_slug)
     books_list = Book.objects.filter(genres=genre)
     
     paginator = Paginator(books_list, 8)
@@ -102,8 +186,8 @@ def category_books(request, genre_id):
     }
     return render(request, 'shop/category_books.html', context)
 
-def language_books(request, language_id):
-    language = get_object_or_404(Languages, id=language_id)
+def language_books(request, language_slug):
+    language = get_object_or_404(Languages, slug=language_slug)
     books_list = Book.objects.filter(languages=language)
     
     paginator = Paginator(books_list, 8)
@@ -189,9 +273,10 @@ def _save_cart(session, cart):
 
 
 def add_to_cart(request, book_id):
+    book = get_object_or_404(Book, id=book_id)
     # Only support POST
     if request.method != 'POST':
-        return redirect('detail', book_id=book_id)
+        return redirect('detail', book_slug=book.slug)
 
     cart = _get_cart(request.session)
     qty = int(request.POST.get('quantity', 1))
@@ -199,7 +284,6 @@ def add_to_cart(request, book_id):
     if qty < 1:
         qty = 1
 
-    book = get_object_or_404(Book, id=book_id)
     cart[str(book_id)] = cart.get(str(book_id), 0) + qty
     _save_cart(request.session, cart)
 
@@ -307,3 +391,86 @@ def cart(request):
         'books': books,
     }
     return render(request, 'shop/cart.html', context)
+
+
+def checkout(request):
+    """Оформление заказа из корзины сессии"""
+    if not request.user.is_authenticated:
+        return redirect('login')
+    
+    cart = _get_cart(request.session)
+    if not cart:
+        return redirect('cart')
+    
+    if request.method == 'POST':
+        # Получаем данные из формы
+        delivery_address = request.POST.get('delivery_address', request.user.address).strip()
+        payment_method = request.POST.get('payment_method', 'card').strip()
+        
+        # Получаем книги из корзины
+        book_ids = [int(k) for k in cart.keys()]
+        books = Book.objects.filter(id__in=book_ids)
+        
+        if not books:
+            return redirect('cart')
+        
+        # Вычисляем общую цену
+        total_price = 0
+        for book in books:
+            qty = int(cart.get(str(book.id), 0))
+            total_price += (book.price or 0) * qty
+        
+        # Создаём заказ
+        order = Order.objects.create(
+            user=request.user,
+            total_price=total_price
+        )
+        # Добавляем книги в заказ
+        for book in books:
+            order.book.add(book)
+        
+        # Создаём запись платежа
+        Payment.objects.create(
+            order=order,
+            payment_method=payment_method,
+            status='В ожидании',
+            amount=total_price
+        )
+        
+        # Очищаем корзину
+        _save_cart(request.session, {})
+        
+        return redirect('order_confirmation', order_id=order.id)
+    
+    # GET: показываем форму оформления
+    book_ids = [int(k) for k in cart.keys()]
+    books = Book.objects.filter(id__in=book_ids)
+    
+    total_price = 0
+    items = []
+    for book in books:
+        qty = int(cart.get(str(book.id), 0))
+        subtotal = (book.price or 0) * qty
+        total_price += subtotal
+        items.append({'book': book, 'quantity': qty, 'subtotal': subtotal})
+    
+    context = {
+        'items': items,
+        'total_price': total_price,
+        'user': request.user,
+    }
+    return render(request, 'shop/checkout.html', context)
+
+
+def order_confirmation(request, order_id):
+    """Страница подтверждения заказа"""
+    order = get_object_or_404(Order, id=order_id, user=request.user)
+    books = order.book.all()
+    payment = order.payment_set.first()
+    
+    context = {
+        'order': order,
+        'books': books,
+        'payment': payment,
+    }
+    return render(request, 'shop/order_confirmation.html', context)
