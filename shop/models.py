@@ -142,6 +142,7 @@ class Book(models.Model):
     description = models.TextField(verbose_name='Описания книги:')
     pub_date = models.CharField(verbose_name='Дата публикации:',max_length=4,help_text='Формат: ГГГГ')
     price = models.IntegerField(verbose_name='Цена книги:')
+    stock = models.IntegerField(verbose_name='Кол-во в наличии:', default=0, blank=True)
     photo = models.ImageField(upload_to='books/', verbose_name='Фото книги:')
     genres = models.ManyToManyField(Genres, verbose_name='Жанр книги:')
     languages = models.ManyToManyField(Languages, verbose_name='Язык книги:')

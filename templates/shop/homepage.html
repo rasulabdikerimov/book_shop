@@ -45,6 +45,11 @@
                                 {{ book.genres.all.0.genre }}
                             </div>
                         {% endif %}
+
+                        <!-- Stock indicator -->
+                        <div class="absolute bottom-3 left-3 bg-green-500 dark:bg-green-600 text-white px-2 py-1 rounded text-xs font-bold">
+                            📦 {{ book.stock }} шт.
+                        </div>
                     </div>
 
                     <!-- Информация -->
