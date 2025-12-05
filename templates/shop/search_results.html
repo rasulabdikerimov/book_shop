@@ -10,8 +10,14 @@
         🔎 Результаты поиска: <span class="text-blue-700 dark:text-blue-400">{{ query }}</span>
     </h1>
 
+    <!-- Toggle advanced filters -->
+    <div class="flex justify-end mb-2">
+        <button id="toggle-advanced-btn" type="button" class="px-4 py-2 rounded bg-blue-600 text-white">🔎 Расширенный поиск</button>
+    </div>
+
     <!-- Filters -->
-    <form method="get" class="mb-6 grid grid-cols-1 md:grid-cols-3 gap-4">
+    <div id="advanced-filters" class="mb-6 {% if show_advanced or base_query or query %}block{% else %}hidden{% endif %}">
+    <form method="get" class="grid grid-cols-1 md:grid-cols-3 gap-4">
         <div>
             <label class="block text-sm font-semibold mb-1">Поиск</label>
             <input type="search" name="q" value="{{ query }}" placeholder="Название или автор" class="w-full px-3 py-2 rounded border-2 border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800">
@@ -62,6 +68,18 @@
             <button type="submit" class="px-4 py-2 rounded bg-blue-600 text-white">Применить фильтры</button>
         </div>
     </form>
+    </div>
+
+    <script>
+        (function(){
+            var btn = document.getElementById('toggle-advanced-btn');
+            var panel = document.getElementById('advanced-filters');
+            if(!btn || !panel) return;
+            btn.addEventListener('click', function(){
+                panel.classList.toggle('hidden');
+            });
+        })();
+    </script>
 
     {% if books %}
     <div class="grid sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-8">
@@ -87,6 +105,15 @@
 
                 <p class="text-lg font-bold text-green-600 dark:text-green-400 transition-colors">
                     {{ book.price }} ₽
+                </p>
+
+                <!-- Stock -->
+                <p class="text-sm font-semibold {% if book.stock > 0 %}text-green-600 dark:text-green-400{% else %}text-red-600 dark:text-red-400{% endif %}">
+                    {% if book.stock > 0 %}
+                        ✅ {{ book.stock }} шт. в наличии
+                    {% else %}
+                        ❌ Нет в наличии
+                    {% endif %}
                 </p>
             </div>
 

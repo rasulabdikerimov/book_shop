@@ -38,6 +38,19 @@
                         {{ author.biography|truncatewords:30 }}
                     </p>
                 {% endif %}
+                
+                <!-- Author stats: reviews and orders -->
+                <div class="mt-4 flex flex-wrap gap-4">
+                    <a href="#author-reviews" class="inline-block bg-white/10 hover:bg-white/20 text-white py-2 px-4 rounded">
+                        🗨️ Отзывов: <strong>{{ author.review.count }}</strong>
+                    </a>
+                    <a href="#author-orders" class="inline-block bg-white/10 hover:bg-white/20 text-white py-2 px-4 rounded">
+                        🧾 Заказы с книгами автора: <strong>{{ author_orders.count }}</strong>
+                    </a>
+                    <a href="{% url 'search_results' %}?author={{ author.slug }}" class="inline-block bg-white/10 hover:bg-white/20 text-white py-2 px-4 rounded">
+                        🔎 Показать в каталоге
+                    </a>
+                </div>
             </div>
         </div>
     </div>
@@ -113,6 +126,46 @@
                     ← Вернуться на главную
                 </a>
             </div>
+        {% endif %}
+    </div>
+
+    <!-- Отзывы об авторе -->
+    <div id="author-reviews" class="mt-12">
+        <h2 class="text-3xl font-bold text-gray-900 dark:text-white mb-4">💬 Отзывы об авторе ({{ author.review.count }})</h2>
+        {% if author_reviews %}
+            <div class="space-y-4">
+                {% for r in author_reviews %}
+                    <div class="bg-white dark:bg-slate-800 rounded-lg p-4 shadow">
+                        <div class="text-sm text-gray-600 dark:text-slate-400 mb-2">От: {{ r.user.email }} — {{ r.created_at|date:"d.m.Y H:i" }}</div>
+                        <div class="text-gray-900 dark:text-slate-100">{{ r.comment }}</div>
+                    </div>
+                {% endfor %}
+            </div>
+        {% else %}
+            <p class="text-gray-500 dark:text-slate-400">Пока нет отзывов об этом авторе.</p>
+        {% endif %}
+    </div>
+
+    <!-- Заказы, содержащие книги автора -->
+    <div id="author-orders" class="mt-12">
+        <h2 class="text-3xl font-bold text-gray-900 dark:text-white mb-4">🧾 Заказы с книгами автора ({{ author_orders.count }})</h2>
+        {% if author_orders %}
+            <div class="space-y-4">
+                {% for order in author_orders %}
+                    <div class="bg-white dark:bg-slate-800 rounded-lg p-4 shadow flex justify-between items-center">
+                        <div>
+                            <div class="text-sm text-gray-600 dark:text-slate-400">Заказ <strong>#{{ order.order_number }}</strong> — {{ order.created_at|date:"d.m.Y H:i" }}</div>
+                            <div class="text-base font-semibold text-gray-900 dark:text-slate-100">Покупатель: {{ order.user.email }}</div>
+                            <div class="text-sm text-gray-600 dark:text-slate-400">Сумма: {{ order.total_price }} ₽</div>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <a href="{% url 'adminpanel:order_detail' order.id %}" class="px-3 py-2 rounded bg-blue-600 text-white">Просмотр (админ)</a>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        {% else %}
+            <p class="text-gray-500 dark:text-slate-400">Пока нет заказов с книгами этого автора.</p>
         {% endif %}
     </div>
 </div>

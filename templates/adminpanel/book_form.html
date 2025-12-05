@@ -15,3 +15,33 @@
     </form>
 </div>
 {% endblock %}
+
+{% block extra_js %}
+<script>
+// Simple slugify function for russian/latin letters
+function slugifyText(text){
+    return text.toString().toLowerCase()
+        .replace(/\s+/g, '-')           // Replace spaces with -
+        .replace(/[^\w\-а-яёіїєґ0-9]+/g, '') // Remove all non-word chars (supports cyrillic)
+        .replace(/\-\-+/g, '-')         // Replace multiple - with single -
+        .replace(/^-+/, '')              // Trim - from start of text
+        .replace(/-+$/, '');             // Trim - from end of text
+}
+
+document.addEventListener('DOMContentLoaded', function(){
+    var title = document.getElementById('id_title');
+    var slug = document.getElementById('id_slug');
+    if(!title || !slug) return;
+
+    // Fill slug on load if empty
+    if(!slug.value && title.value){
+        slug.value = slugifyText(title.value);
+    }
+
+    // Update slug as user types
+    title.addEventListener('input', function(e){
+        slug.value = slugifyText(e.target.value);
+    });
+});
+</script>
+{% endblock %}

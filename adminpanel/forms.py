@@ -6,10 +6,12 @@ class AdminBookForm(forms.ModelForm):
     class Meta:
         model = Book
         fields = [
+            'slug',
             'title', 'description', 'pub_date', 'price', 'photo',
             'genres', 'languages', 'authors'
         ]
         widgets = {
+            'slug': forms.TextInput(attrs={'readonly': 'readonly'}),
             'description': forms.Textarea(attrs={'rows': 4}),
             'genres': forms.SelectMultiple(attrs={'size': 6}),
             'languages': forms.SelectMultiple(attrs={'size': 6}),

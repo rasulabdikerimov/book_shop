@@ -84,6 +84,7 @@
             <ul class="hidden md:flex space-x-8 font-semibold">
                 <li><a href="{% url 'homepage' %}" class="text-white hover:text-blue-100 dark:hover:text-blue-200 transition">🏠 Главная</a></li>
                 <li><a href="{% url 'popular_books' %}" class="text-white hover:text-blue-100 dark:hover:text-blue-200 transition">🛍️ Каталог</a></li>
+                <li><a href="{% url 'search_results' %}?show_advanced=1" class="text-white hover:text-blue-100 dark:hover:text-blue-200 transition">🔎 Расширенный поиск</a></li>
                 <li><a href="" class="text-white hover:text-blue-100 dark:hover:text-blue-200 transition">❤️ Избранное</a></li>
                 {% if user.is_authenticated %}
                     <li><a href="{% url 'profile' %}" class="text-white hover:text-blue-100 dark:hover:text-blue-200 transition">👤 {{ user.email }}</a></li>

@@ -8,7 +8,7 @@ from .forms import CustomUserCreationForm, ReviewForm,CustomUserChangeForm
 from django.contrib.auth import login,authenticate,logout
 from django.http import JsonResponse
 def homepage(request):
-    books = Book.objects.all()[:4]
+    books = Book.objects.filter(stock__gt=0)[:4]
     genres = Genres.objects.all()[:6]
     authors = Authors.objects.all()[:6]
     context = {
@@ -19,7 +19,7 @@ def homepage(request):
     return render(request, 'shop/homepage.html', context)
 
 def popular_books(request):
-    books_list = Book.objects.all()
+    books_list = Book.objects.filter(stock__gt=0)
     paginator = Paginator(books_list, 8)
     page_number = request.GET.get('page')
     books = paginator.get_page(page_number)
@@ -42,7 +42,7 @@ def search_results(request):
     genre_slug = request.GET.get('genre', '').strip()
     language_slug = request.GET.get('language', '').strip()
 
-    books_qs = Book.objects.all()
+    books_qs = Book.objects.filter(stock__gt=0)
     
    
     if q:
@@ -112,7 +112,6 @@ def search_results(request):
         query_params['language'] = language_slug
     
     base_query = urlencode(query_params) if query_params else ''
-
     context = {
         'books': books,
         'query': q,
@@ -128,6 +127,9 @@ def search_results(request):
         'languages': languages,
         'base_query': base_query,
     }
+    # show_advanced -> True when user explicitly requested expanded filters
+    show_advanced = bool(request.GET.get('show_advanced'))
+    context['show_advanced'] = show_advanced
     return render(request, 'shop/search_results.html', context)
 def book_detail(request, book_slug):
     book = get_object_or_404(Book, slug=book_slug)
@@ -163,18 +165,24 @@ def book_detail(request, book_slug):
 
 def author_detail(request, author_slug):
     author = get_object_or_404(Authors, slug=author_slug)
-    books = Book.objects.filter(authors=author)
+    books = Book.objects.filter(authors=author, stock__gt=0)
+  
+    author_reviews = author.review.all()
+   
+    author_orders = Order.objects.filter(book__authors=author).distinct().order_by('-created_at')[:10]
     
     context = {
         'author': author,
         'books': books,
+        'author_reviews': author_reviews,
+        'author_orders': author_orders,
     }
     return render(request, 'shop/author_detail.html', context)
 
 
 def category_books(request, genre_slug):
     genre = get_object_or_404(Genres, slug=genre_slug)
-    books_list = Book.objects.filter(genres=genre)
+    books_list = Book.objects.filter(genres=genre, stock__gt=0)
     
     paginator = Paginator(books_list, 8)
     page_number = request.GET.get('page')
@@ -188,7 +196,7 @@ def category_books(request, genre_slug):
 
 def language_books(request, language_slug):
     language = get_object_or_404(Languages, slug=language_slug)
-    books_list = Book.objects.filter(languages=language)
+    books_list = Book.objects.filter(languages=language, stock__gt=0)
     
     paginator = Paginator(books_list, 8)
     page_number = request.GET.get('page')
@@ -234,13 +242,15 @@ def logout_view(request):
 
 def profile(request):
     reviews = Review.objects.filter(user=request.user)
+    orders = Order.objects.filter(user=request.user).order_by('-created_at')
+    
     if not request.user.is_authenticated:
         return redirect('login')
-    
     
     context = {
         'user': request.user,
         'reviews': reviews,
+        'orders': orders,
     }
     return render(request, 'users/profile.html', context)
 
@@ -425,9 +435,13 @@ def checkout(request):
             user=request.user,
             total_price=total_price
         )
-        # Добавляем книги в заказ
+        # Добавляем книги в заказ и уменьшаем стоимость
         for book in books:
+            qty = int(cart.get(str(book.id), 0))
             order.book.add(book)
+            # Уменьшаем количество в наличии
+            book.stock -= qty
+            book.save()
         
         # Создаём запись платежа
         Payment.objects.create(
