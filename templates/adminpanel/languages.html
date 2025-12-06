@@ -1,0 +1,71 @@
+{% extends 'adminpanel/base.html' %}
+{% block title %}Languages — Admin{% endblock %}
+{% block header %}Языки{% endblock %}
+{% block content %}
+<div class="panel">
+    <!-- Статистика -->
+    <div style="background: white; padding: 20px; border-radius: 8px; margin-bottom: 20px;">
+        <h3 style="margin-top: 0; margin-bottom: 15px;">Статистика языков</h3>
+        <p style="margin: 0; color: #666;">
+            Всего языков: <strong style="font-size: 18px; color: #0066cc;">{{ total_languages }}</strong>
+        </p>
+    </div>
+
+    <!-- Таблица языков -->
+    <div class="table-wrap">
+        <table>
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Название языка</th>
+                    <th>Слаг</th>
+                    <th>Количество книг</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for language in languages %}
+                <tr>
+                    <td>{{ language.id }}</td>
+                    <td><strong>{{ language.language }}</strong></td>
+                    <td><code style="background: #f3f4f6; padding: 4px 8px; border-radius: 4px;">{{ language.slug }}</code></td>
+                    <td>{{ language.book_set.count }}</td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="4" style="text-align: center; padding: 20px; color: #999;">Языков не найдено</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Пагинация -->
+    {% if languages.has_other_pages %}
+    <div style="display: flex; justify-content: center; align-items: center; gap: 10px; margin-top: 20px; flex-wrap: wrap;">
+        {% if languages.has_previous %}
+            <a href="?page=1" class="btn small">« Первая</a>
+            <a href="?page={{ languages.previous_page_number }}" class="btn small">‹ Предыдущая</a>
+        {% endif %}
+
+        <div style="display: flex; gap: 5px;">
+            {% for num in languages.paginator.page_range %}
+                {% if languages.number == num %}
+                    <span class="btn small" style="background: #0066cc; color: white; cursor: default;">{{ num }}</span>
+                {% elif num > languages.number|add:'-3' and num < languages.number|add:'3' %}
+                    <a href="?page={{ num }}" class="btn small">{{ num }}</a>
+                {% endif %}
+            {% endfor %}
+        </div>
+
+        {% if languages.has_next %}
+            <a href="?page={{ languages.next_page_number }}" class="btn small">Следующая ›</a>
+            <a href="?page={{ languages.paginator.num_pages }}" class="btn small">Последняя »</a>
+        {% endif %}
+    </div>
+    {% endif %}
+
+    <div style="text-align: center; margin-top: 15px; color: #666; font-size: 14px;">
+        Страница {{ languages.number }} из {{ languages.paginator.num_pages }} (всего {{ total_languages }} языков)
+    </div>
+</div>
+{% endblock %}

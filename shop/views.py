@@ -435,13 +435,10 @@ def checkout(request):
             user=request.user,
             total_price=total_price
         )
-        # Добавляем книги в заказ и уменьшаем стоимость
+        # Добавляем книги в заказ (товар будет вычтен только после оплаты и доставки)
         for book in books:
             qty = int(cart.get(str(book.id), 0))
             order.book.add(book)
-            # Уменьшаем количество в наличии
-            book.stock -= qty
-            book.save()
         
         # Создаём запись платежа
         Payment.objects.create(

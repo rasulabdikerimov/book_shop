@@ -16,8 +16,18 @@
                 <a href="{% url 'adminpanel:books' %}" class="nav-item">Books</a>
                 <a href="{% url 'adminpanel:users' %}" class="nav-item">Users</a>
                 <a href="{% url 'adminpanel:orders' %}" class="nav-item">Orders</a>
+                <a href="{% url 'adminpanel:deliveries' %}" class="nav-item">Deliveries</a>
                 <a href="{% url 'adminpanel:reviews' %}" class="nav-item">Reviews</a>
-                <a href="{% url 'homepage' %}" class="nav-item">Back to site</a>
+                
+                <div style="margin-top: 20px; padding-top: 20px; border-top: 1px solid #ddd;">
+                    <div style="font-size: 12px; color: #999; padding: 10px; text-transform: uppercase; font-weight: bold;">Каталог</div>
+                    <a href="{% url 'adminpanel:genres' %}" class="nav-item">Genres</a>
+                    <a href="{% url 'adminpanel:languages' %}" class="nav-item">Languages</a>
+                    <a href="{% url 'adminpanel:countries' %}" class="nav-item">Countries</a>
+                    <a href="{% url 'adminpanel:authors' %}" class="nav-item">Authors</a>
+                </div>
+                
+                <a href="{% url 'homepage' %}" class="nav-item" style="margin-top: 20px; border-top: 1px solid #ddd; padding-top: 20px;">Back to site</a>
             </nav>
             <div class="sidebar-footer">Signed in as <strong>{{ request.user.username }}</strong></div>
         </aside>

@@ -183,6 +183,7 @@ class Order(models.Model):
                              verbose_name='Пользователь:')
     book = models.ManyToManyField(Book, verbose_name='Книга:')
     total_price = models.IntegerField(verbose_name='Общая цена заказа:')
+    stock_deducted = models.BooleanField(default=False, verbose_name='Товар вычтен:')
     created_at = models.DateTimeField(auto_now_add=True,
                                       verbose_name='Дата создания заказа:')
     updated_at = models.DateTimeField(auto_now=True,
@@ -196,13 +197,20 @@ class Order(models.Model):
     def __str__(self) -> str:
         return f'Order #{self.order_number} - {self.user.username}'
 class Payment(models.Model):
+    STATUS_CHOICES = [
+        ('В ожидании', 'В ожидании'),
+        ('Завершен', 'Завершен'),
+        ('Отменен', 'Отменен'),
+    ]
+    
     order = models.ForeignKey(Order, on_delete=models.CASCADE,
                               verbose_name='Заказ:')
     payment_method = models.CharField(max_length=100,
                                       verbose_name='Способ оплаты:')
     status = models.CharField(max_length=100,
                               verbose_name='Статус оплаты:',
-                              default='В ожидании')
+                              default='В ожидании',
+                              choices=STATUS_CHOICES)
     
     payment_date = models.DateTimeField(auto_now_add=True,
                                         verbose_name='Дата оплаты:')
@@ -211,22 +219,53 @@ class Payment(models.Model):
     def __str__(self) -> str:
         return f'Payment for Order #{self.order.order_number}'
     
+    def mark_as_completed(self):
+        """Отметить платёж как завершённый и вычесть товар"""
+        if self.status != 'Завершен':
+            self.status = 'Завершен'
+            self.save()
+            # Вычитаем товар из наличия при завершении платежа только если ещё не вычли
+            if not self.order.stock_deducted:
+                for book in self.order.book.all():
+                    qty = 1  # Можно модифицировать если добавить поле quantity в Order
+                    book.stock -= qty
+                    book.save()
+                # Отмечаем что товар был вычтен
+                self.order.stock_deducted = True
+                self.order.save()
+    
 
 class Delivery(models.Model):
-    employee = models.ForeignKey('Employee', on_delete=models.CASCADE,
-                                 verbose_name='Сотрудник доставки:')
+    employee = models.ForeignKey('Employee', on_delete=models.SET_NULL,
+                                 verbose_name='Сотрудник доставки:', null=True, blank=True)
     order = models.ForeignKey(Order, on_delete=models.CASCADE,
                               verbose_name='Заказ:')
     delivery_address = models.CharField(max_length=255,
                                         verbose_name='Адрес доставки:')
     delivery_date = models.CharField(max_length=100,
-                                     verbose_name='Дата доставки:')
+                                     verbose_name='Дата доставки:', null=True, blank=True)
     status = models.CharField(max_length=100,
                               verbose_name='Статус доставки:',
                               default='В ожидании')
+    created_at = models.DateTimeField(auto_now_add=True, verbose_name='Дата создания:')
+    updated_at = models.DateTimeField(auto_now=True, verbose_name='Дата обновления:')
 
     def __str__(self) -> str:
         return f'Delivery for Order #{self.order.order_number}'
+    
+    def mark_as_delivered(self):
+        """Отметить доставку как завершённую и вычесть товар из наличия"""
+        if self.status != 'Завершена':
+            self.status = 'Завершена'
+            self.save()
+            # Вычитаем товар из наличия только если ещё не вычли
+            if not self.order.stock_deducted:
+                for book in self.order.book.all():
+                    book.stock -= 1
+                    book.save()
+                # Отмечаем что товар был вычтен
+                self.order.stock_deducted = True
+                self.order.save()
     
 
 class Employee(models.Model):

@@ -1,5 +1,5 @@
 from django import forms
-from shop.models import Book, Review, CustomUser
+from shop.models import Book, Review, CustomUser, Genres, Authors, Languages, Countries
 
 
 class AdminBookForm(forms.ModelForm):
@@ -16,6 +16,44 @@ class AdminBookForm(forms.ModelForm):
             'genres': forms.SelectMultiple(attrs={'size': 6}),
             'languages': forms.SelectMultiple(attrs={'size': 6}),
             'authors': forms.SelectMultiple(attrs={'size': 6}),
+        }
+
+
+class AdminGenreForm(forms.ModelForm):
+    class Meta:
+        model = Genres
+        fields = ['genre']
+        widgets = {
+            'genre': forms.TextInput(attrs={'placeholder': 'Введите название жанра'}),
+        }
+
+
+class AdminAuthorForm(forms.ModelForm):
+    class Meta:
+        model = Authors
+        fields = ['full_name', 'birth_date', 'country', 'photo', 'biography']
+        widgets = {
+            'full_name': forms.TextInput(attrs={'placeholder': 'ФИО автора'}),
+            'birth_date': forms.TextInput(attrs={'placeholder': 'Дата рождения (ДД.ММ.ГГГГ)'}),
+            'biography': forms.Textarea(attrs={'rows': 4, 'placeholder': 'Биография'}),
+        }
+
+
+class AdminLanguageForm(forms.ModelForm):
+    class Meta:
+        model = Languages
+        fields = ['language']
+        widgets = {
+            'language': forms.TextInput(attrs={'placeholder': 'Введите название языка'}),
+        }
+
+
+class AdminCountryForm(forms.ModelForm):
+    class Meta:
+        model = Countries
+        fields = ['country']
+        widgets = {
+            'country': forms.TextInput(attrs={'placeholder': 'Введите название страны'}),
         }
 
 

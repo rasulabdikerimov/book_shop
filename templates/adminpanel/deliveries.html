@@ -1,0 +1,113 @@
+{% extends 'adminpanel/base.html' %}
+{% block title %}Deliveries — Admin{% endblock %}
+{% block header %}Доставки{% endblock %}
+{% block content %}
+<div class="panel">
+    <!-- Статистика -->
+    <div style="background: white; padding: 20px; border-radius: 8px; margin-bottom: 20px;">
+        <h3 style="margin-top: 0; margin-bottom: 15px;">Статистика доставок</h3>
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px;">
+            <div>
+                <p style="margin: 0; color: #666; font-size: 12px;">Всего доставок</p>
+                <p style="margin: 5px 0 0 0; font-size: 24px; font-weight: bold; color: #0066cc;">{{ total_deliveries }}</p>
+            </div>
+            <div>
+                <p style="margin: 0; color: #666; font-size: 12px;">На текущей странице</p>
+                <p style="margin: 5px 0 0 0; font-size: 24px; font-weight: bold; color: #16a34a;">{{ deliveries|length }}</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Таблица доставок -->
+    <div class="table-wrap">
+        <table>
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Номер заказа</th>
+                    <th>Адрес доставки</th>
+                    <th>Дата доставки</th>
+                    <th>Сотрудник</th>
+                    <th>Статус</th>
+                    <th>Дата создания</th>
+                    <th>Действия</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for d in deliveries %}
+                <tr>
+                    <td>{{ d.id }}</td>
+                    <td>
+                        <a href="{% url 'adminpanel:order_detail' d.order.id %}" style="color: #0066cc; text-decoration: none;">
+                            #{{ d.order.order_number }}
+                        </a>
+                    </td>
+                    <td>{{ d.delivery_address|truncatewords:5 }}</td>
+                    <td>{{ d.delivery_date|default:"Не указана" }}</td>
+                    <td>{{ d.employee.full_name|default:"Не назначен" }}</td>
+                    <td>
+                        {% if d.status == 'В ожидании' %}
+                            <span class="badge warning">⏳ {{ d.status }}</span>
+                        {% elif d.status == 'В пути' %}
+                            <span class="badge info">🚚 {{ d.status }}</span>
+                        {% elif d.status == 'Завершена' %}
+                            <span class="badge success">✅ {{ d.status }}</span>
+                        {% else %}
+                            <span class="badge error">❌ {{ d.status }}</span>
+                        {% endif %}
+                    </td>
+                    <td>{{ d.created_at|date:"d.m.Y H:i" }}</td>
+                    <td>
+                        <a href="{% url 'adminpanel:order_detail' d.order.id %}" class="btn small">Просмотр</a>
+                        <a href="{% url 'adminpanel:delivery_update_status' d.id %}" class="btn small muted">Статус</a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Пагинация -->
+    {% if deliveries.has_other_pages %}
+    <div style="display: flex; justify-content: center; align-items: center; gap: 10px; margin-top: 20px; flex-wrap: wrap;">
+        {% if deliveries.has_previous %}
+            <a href="?page=1" class="btn small">« Первая</a>
+            <a href="?page={{ deliveries.previous_page_number }}" class="btn small">‹ Предыдущая</a>
+        {% endif %}
+
+        <div style="display: flex; gap: 5px;">
+            {% for num in deliveries.paginator.page_range %}
+                {% if deliveries.number == num %}
+                    <span class="btn small" style="background: #0066cc; color: white; cursor: default;">{{ num }}</span>
+                {% elif num > deliveries.number|add:'-3' and num < deliveries.number|add:'3' %}
+                    <a href="?page={{ num }}" class="btn small">{{ num }}</a>
+                {% endif %}
+            {% endfor %}
+        </div>
+
+        {% if deliveries.has_next %}
+            <a href="?page={{ deliveries.next_page_number }}" class="btn small">Следующая ›</a>
+            <a href="?page={{ deliveries.paginator.num_pages }}" class="btn small">Последняя »</a>
+        {% endif %}
+    </div>
+    {% endif %}
+
+    <div style="text-align: center; margin-top: 15px; color: #666; font-size: 14px;">
+        Страница {{ deliveries.number }} из {{ deliveries.paginator.num_pages }} (всего {{ total_deliveries }} доставок)
+    </div>
+</div>
+
+<style>
+    .badge {
+        display: inline-block;
+        padding: 4px 8px;
+        border-radius: 4px;
+        font-size: 12px;
+        font-weight: bold;
+    }
+    .badge.warning { background-color: #fbbf24; color: #78350f; }
+    .badge.info { background-color: #60a5fa; color: #1e3a8a; }
+    .badge.success { background-color: #86efac; color: #166534; }
+    .badge.error { background-color: #fca5a5; color: #7f1d1d; }
+</style>
+{% endblock %}

@@ -1,7 +1,7 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
-from shop.models import Book, Order, CustomUser, Review
-from .forms import AdminBookForm, AdminReviewForm, AdminUserForm
+from shop.models import Book, Order, CustomUser, Review, Delivery, Payment, Genres, Languages, Countries, Authors
+from .forms import AdminBookForm, AdminReviewForm, AdminUserForm, AdminGenreForm, AdminAuthorForm
 from django.urls import reverse
 from django.views.decorators.http import require_POST
 
@@ -48,8 +48,26 @@ def users_list(request):
 
 @_staff_required
 def orders_list(request):
-	orders = Order.objects.all().order_by('-created_at')
-	return render(request, 'adminpanel/orders.html', {'orders': orders})
+	from django.core.paginator import Paginator
+	
+	orders_all = Order.objects.all().order_by('-created_at')
+	paginator = Paginator(orders_all, 10)  # 10 заказов на странице
+	page_number = request.GET.get('page')
+	orders = paginator.get_page(page_number)
+	
+	# Расчёт общей суммы всех заказов
+	total_sales = sum(order.total_price for order in orders_all)
+	
+	# Средняя сумма заказа
+	average_order = int(total_sales / orders_all.count()) if orders_all.count() > 0 else 0
+	
+	context = {
+		'orders': orders,
+		'total_sales': total_sales,
+		'average_order': average_order,
+		'total_orders': orders_all.count(),
+	}
+	return render(request, 'adminpanel/orders.html', context)
 
 
 @_staff_required
@@ -141,11 +159,13 @@ def order_detail(request, order_id):
 	order = get_object_or_404(Order, id=order_id)
 	books = order.book.all()
 	payment = order.payment_set.first()
+	delivery = order.delivery_set.first()
 	
 	context = {
 		'order': order,
 		'books': books,
 		'payment': payment,
+		'delivery': delivery,
 	}
 	return render(request, 'adminpanel/order_detail.html', context)
 
@@ -155,17 +175,275 @@ def order_update_status(request, order_id):
 
 	order = get_object_or_404(Order, id=order_id)
 	payment = order.payment_set.first()
+	delivery = order.delivery_set.first()
 	
 	if request.method == 'POST':
 		new_status = request.POST.get('status')
 		if new_status and payment:
-			payment.status = new_status
-			payment.save()
+	
+			if new_status == 'Завершен':
+				payment.mark_as_completed()
+			else:
+				payment.status = new_status
+				payment.save()
 		return redirect('adminpanel:order_detail', order_id=order.id)
 	
 	context = {
 		'order': order,
 		'payment': payment,
+		'delivery': delivery,
 		'statuses': ['В ожидании', 'Завершен', 'Отменен'],
 	}
 	return render(request, 'adminpanel/order_update_status.html', context)
+
+
+@_staff_required
+def delivery_create(request, order_id):
+
+	order = get_object_or_404(Order, id=order_id)
+	
+	if request.method == 'POST':
+		delivery_address = request.POST.get('delivery_address', order.user.address).strip()
+		delivery_date = request.POST.get('delivery_date', '').strip()
+		
+		delivery = Delivery.objects.create(
+			order=order,
+			delivery_address=delivery_address,
+			delivery_date=delivery_date,
+			status='В ожидании'
+		)
+		return redirect('adminpanel:order_detail', order_id=order.id)
+	
+	context = {
+		'order': order,
+	}
+	return render(request, 'adminpanel/delivery_form.html', context)
+
+
+@_staff_required
+def delivery_update_status(request, delivery_id):
+	
+	delivery = get_object_or_404(Delivery, id=delivery_id)
+	
+	if request.method == 'POST':
+		new_status = request.POST.get('status')
+		if new_status:
+		
+			if new_status == 'Завершена':
+				delivery.mark_as_delivered()
+			else:
+				delivery.status = new_status
+				delivery.save()
+		return redirect('adminpanel:order_detail', order_id=delivery.order.id)
+	
+	context = {
+		'delivery': delivery,
+		'statuses': ['В ожидании', 'В пути', 'Завершена', 'Отменена'],
+	}
+	return render(request, 'adminpanel/delivery_update_status.html', context)
+
+
+@_staff_required
+def deliveries_list(request):
+	
+	from django.core.paginator import Paginator
+	
+	deliveries_all = Delivery.objects.select_related('order', 'employee').order_by('-created_at')
+	paginator = Paginator(deliveries_all, 15)
+	page_number = request.GET.get('page')
+	deliveries = paginator.get_page(page_number)
+	
+	context = {
+		'deliveries': deliveries,
+		'total_deliveries': deliveries_all.count(),
+	}
+	return render(request, 'adminpanel/deliveries.html', context)
+
+
+@_staff_required
+def genres_list(request):
+
+	from django.core.paginator import Paginator
+	
+	genres_all = Genres.objects.all().order_by('genre')
+	paginator = Paginator(genres_all, 20)
+	page_number = request.GET.get('page')
+	genres = paginator.get_page(page_number)
+	
+	context = {
+		'genres': genres,
+		'total_genres': genres_all.count(),
+	}
+	return render(request, 'adminpanel/genres.html', context)
+
+
+@_staff_required
+def languages_list(request):
+
+	from django.core.paginator import Paginator
+	
+	languages_all = Languages.objects.all().order_by('language')
+	paginator = Paginator(languages_all, 20)
+	page_number = request.GET.get('page')
+	languages = paginator.get_page(page_number)
+	
+	context = {
+		'languages': languages,
+		'total_languages': languages_all.count(),
+	}
+	return render(request, 'adminpanel/languages.html', context)
+
+
+@_staff_required
+def countries_list(request):
+	
+	from django.core.paginator import Paginator
+	
+	countries_all = Countries.objects.all().order_by('country')
+	paginator = Paginator(countries_all, 20)
+	page_number = request.GET.get('page')
+	countries = paginator.get_page(page_number)
+	
+	context = {
+		'countries': countries,
+		'total_countries': countries_all.count(),
+	}
+	return render(request, 'adminpanel/countries.html', context)
+
+
+@_staff_required
+def authors_list(request):
+
+	from django.core.paginator import Paginator
+	
+	authors_all = Authors.objects.all().order_by('full_name')
+	paginator = Paginator(authors_all, 15)
+	page_number = request.GET.get('page')
+	authors = paginator.get_page(page_number)
+	
+	context = {
+		'authors': authors,
+		'total_authors': authors_all.count(),
+	}
+	return render(request, 'adminpanel/authors.html', context)
+
+
+@_staff_required
+def genre_create(request):
+	from .forms import AdminGenreForm
+	
+	if request.method == 'POST':
+		form = AdminGenreForm(request.POST)
+		if form.is_valid():
+			form.save()
+			return redirect('adminpanel:genres_list')
+	else:
+		form = AdminGenreForm()
+	
+	context = {
+		'form': form,
+		'title': 'Добавить новый жанр',
+		'button_text': 'Добавить жанр',
+	}
+	return render(request, 'adminpanel/model_form.html', context)
+
+
+@_staff_required
+def genre_edit(request, genre_id):
+	from .forms import AdminGenreForm
+	
+	genre = get_object_or_404(Genres, id=genre_id)
+	
+	if request.method == 'POST':
+		form = AdminGenreForm(request.POST, instance=genre)
+		if form.is_valid():
+			form.save()
+			return redirect('adminpanel:genres_list')
+	else:
+		form = AdminGenreForm(instance=genre)
+	
+	context = {
+		'form': form,
+		'title': f'Редактировать жанр: {genre.genre}',
+		'button_text': 'Сохранить изменения',
+	}
+	return render(request, 'adminpanel/model_form.html', context)
+
+
+@_staff_required
+def genre_delete(request, genre_id):
+	genre = get_object_or_404(Genres, id=genre_id)
+	
+	if request.method == 'POST':
+		genre.delete()
+		return redirect('adminpanel:genres_list')
+	
+	context = {
+		'object': genre,
+		'object_name': genre.genre,
+		'model_name': 'жанр',
+		'cancel_url': 'adminpanel:genres_list',
+	}
+	return render(request, 'adminpanel/confirm_delete.html', context)
+
+
+@_staff_required
+def author_create(request):
+	
+	from .forms import AdminAuthorForm
+	
+	if request.method == 'POST':
+		form = AdminAuthorForm(request.POST, request.FILES)
+		if form.is_valid():
+			form.save()
+			return redirect('adminpanel:authors_list')
+	else:
+		form = AdminAuthorForm()
+	
+	context = {
+		'form': form,
+		'title': 'Добавить нового автора',
+		'button_text': 'Добавить автора',
+	}
+	return render(request, 'adminpanel/model_form.html', context)
+
+
+@_staff_required
+def author_edit(request, author_id):
+	
+	from .forms import AdminAuthorForm
+	
+	author = get_object_or_404(Authors, id=author_id)
+	
+	if request.method == 'POST':
+		form = AdminAuthorForm(request.POST, request.FILES, instance=author)
+		if form.is_valid():
+			form.save()
+			return redirect('adminpanel:authors_list')
+	else:
+		form = AdminAuthorForm(instance=author)
+	
+	context = {
+		'form': form,
+		'title': f'Редактировать автора: {author.full_name}',
+		'button_text': 'Сохранить изменения',
+	}
+	return render(request, 'adminpanel/model_form.html', context)
+
+
+@_staff_required
+def author_delete(request, author_id):
+	
+	author = get_object_or_404(Authors, id=author_id)
+	
+	if request.method == 'POST':
+		author.delete()
+		return redirect('adminpanel:authors_list')
+	
+	context = {
+		'object': author,
+		'object_name': author.full_name,
+		'model_name': 'автора',
+		'cancel_url': 'adminpanel:authors_list',
+	}
+	return render(request, 'adminpanel/confirm_delete.html', context)

@@ -3,11 +3,11 @@
 {% block header %}Подтвердите действие{% endblock %}
 {% block content %}
 <div class="panel">
-    <p>Вы действительно хотите удалить {{ type }}: <strong>{{ obj }}</strong> ?</p>
+    <p>Вы действительно хотите удалить {{ model_name }}: <strong>{{ object_name }}</strong> ?</p>
     <form method="POST" class="mt-4">
         {% csrf_token %}
         <button class="btn">Да, удалить</button>
-        <a href="javascript:history.back()" class="btn small muted">Отмена</a>
+        <a href="{% url cancel_url %}" class="btn small muted">Отмена</a>
     </form>
 </div>
 {% endblock %}

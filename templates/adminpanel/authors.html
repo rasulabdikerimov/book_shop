@@ -1,0 +1,115 @@
+{% extends 'adminpanel/base.html' %}
+{% block title %}Authors — Admin{% endblock %}
+{% block header %}Авторы{% endblock %}
+{% block content %}
+<div class="panel">
+    <!-- Статистика и кнопка добавления -->
+    <div style="background: white; padding: 20px; border-radius: 8px; margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center;">
+        <div>
+            <h3 style="margin-top: 0; margin-bottom: 15px;">Статистика авторов</h3>
+            <p style="margin: 0; color: #666;">
+                Всего авторов: <strong style="font-size: 18px; color: #0066cc;">{{ total_authors }}</strong>
+            </p>
+        </div>
+        <a href="{% url 'adminpanel:author_create' %}" style="
+            background-color: #28a745;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            text-decoration: none;
+            font-weight: bold;
+            cursor: pointer;
+            display: inline-block;
+        ">+ Добавить автора</a>
+    </div>
+
+    <!-- Таблица авторов -->
+    <div class="table-wrap">
+        <table>
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>ФИО автора</th>
+                    <th>Страна</th>
+                    <th>Дата рождения</th>
+                    <th>Количество книг</th>
+                    <th>Действия</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for author in authors %}
+                <tr>
+                    <td>{{ author.id }}</td>
+                    <td>
+                        <strong>{{ author.full_name }}</strong><br>
+                        <small style="color: #666;">{{ author.slug }}</small>
+                    </td>
+                    <td>{{ author.country.country }}</td>
+                    <td>{{ author.birth_date }}</td>
+                    <td>{{ author.book_set.count }}</td>
+                    <td>
+                        <a href="{% url 'adminpanel:author_edit' author.id %}" style="
+                            background-color: #007bff;
+                            color: white;
+                            padding: 5px 12px;
+                            border: none;
+                            border-radius: 3px;
+                            text-decoration: none;
+                            font-size: 12px;
+                            cursor: pointer;
+                            display: inline-block;
+                            margin-right: 5px;
+                        ">Редактировать</a>
+                        <a href="{% url 'adminpanel:author_delete' author.id %}" style="
+                            background-color: #dc3545;
+                            color: white;
+                            padding: 5px 12px;
+                            border: none;
+                            border-radius: 3px;
+                            text-decoration: none;
+                            font-size: 12px;
+                            cursor: pointer;
+                            display: inline-block;
+                        ">Удалить</a>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="6" style="text-align: center; padding: 20px; color: #999;">Авторов не найдено</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Пагинация -->
+    {% if authors.has_other_pages %}
+    <div style="display: flex; justify-content: center; align-items: center; gap: 10px; margin-top: 20px; flex-wrap: wrap;">
+        {% if authors.has_previous %}
+            <a href="?page=1" class="btn small">« Первая</a>
+            <a href="?page={{ authors.previous_page_number }}" class="btn small">‹ Предыдущая</a>
+        {% endif %}
+
+        <div style="display: flex; gap: 5px;">
+            {% for num in authors.paginator.page_range %}
+                {% if authors.number == num %}
+                    <span class="btn small" style="background: #0066cc; color: white; cursor: default;">{{ num }}</span>
+                {% elif num > authors.number|add:'-3' and num < authors.number|add:'3' %}
+                    <a href="?page={{ num }}" class="btn small">{{ num }}</a>
+                {% endif %}
+            {% endfor %}
+        </div>
+
+        {% if authors.has_next %}
+            <a href="?page={{ authors.next_page_number }}" class="btn small">Следующая ›</a>
+            <a href="?page={{ authors.paginator.num_pages }}" class="btn small">Последняя »</a>
+        {% endif %}
+    </div>
+    {% endif %}
+
+    <div style="text-align: center; margin-top: 15px; color: #666; font-size: 14px;">
+        Страница {{ authors.number }} из {{ authors.paginator.num_pages }} (всего {{ total_authors }} авторов)
+    </div>
+</div>
+{% endblock %}

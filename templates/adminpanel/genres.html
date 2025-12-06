@@ -1,0 +1,110 @@
+{% extends 'adminpanel/base.html' %}
+{% block title %}Genres — Admin{% endblock %}
+{% block header %}Жанры{% endblock %}
+{% block content %}
+<div class="panel">
+    <!-- Статистика и кнопка добавления -->
+    <div style="background: white; padding: 20px; border-radius: 8px; margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center;">
+        <div>
+            <h3 style="margin-top: 0; margin-bottom: 15px;">Статистика жанров</h3>
+            <p style="margin: 0; color: #666;">
+                Всего жанров: <strong style="font-size: 18px; color: #0066cc;">{{ total_genres }}</strong>
+            </p>
+        </div>
+        <a href="{% url 'adminpanel:genre_create' %}" style="
+            background-color: #28a745;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            text-decoration: none;
+            font-weight: bold;
+            cursor: pointer;
+            display: inline-block;
+        ">+ Добавить жанр</a>
+    </div>
+
+    <!-- Таблица жанров -->
+    <div class="table-wrap">
+        <table>
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Название жанра</th>
+                    <th>Слаг</th>
+                    <th>Количество книг</th>
+                    <th>Действия</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for genre in genres %}
+                <tr>
+                    <td>{{ genre.id }}</td>
+                    <td><strong>{{ genre.genre }}</strong></td>
+                    <td><code style="background: #f3f4f6; padding: 4px 8px; border-radius: 4px;">{{ genre.slug }}</code></td>
+                    <td>{{ genre.book_set.count }}</td>
+                    <td>
+                        <a href="{% url 'adminpanel:genre_edit' genre.id %}" style="
+                            background-color: #007bff;
+                            color: white;
+                            padding: 5px 12px;
+                            border: none;
+                            border-radius: 3px;
+                            text-decoration: none;
+                            font-size: 12px;
+                            cursor: pointer;
+                            display: inline-block;
+                            margin-right: 5px;
+                        ">Редактировать</a>
+                        <a href="{% url 'adminpanel:genre_delete' genre.id %}" style="
+                            background-color: #dc3545;
+                            color: white;
+                            padding: 5px 12px;
+                            border: none;
+                            border-radius: 3px;
+                            text-decoration: none;
+                            font-size: 12px;
+                            cursor: pointer;
+                            display: inline-block;
+                        ">Удалить</a>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="5" style="text-align: center; padding: 20px; color: #999;">Жанров не найдено</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Пагинация -->
+    {% if genres.has_other_pages %}
+    <div style="display: flex; justify-content: center; align-items: center; gap: 10px; margin-top: 20px; flex-wrap: wrap;">
+        {% if genres.has_previous %}
+            <a href="?page=1" class="btn small">« Первая</a>
+            <a href="?page={{ genres.previous_page_number }}" class="btn small">‹ Предыдущая</a>
+        {% endif %}
+
+        <div style="display: flex; gap: 5px;">
+            {% for num in genres.paginator.page_range %}
+                {% if genres.number == num %}
+                    <span class="btn small" style="background: #0066cc; color: white; cursor: default;">{{ num }}</span>
+                {% elif num > genres.number|add:'-3' and num < genres.number|add:'3' %}
+                    <a href="?page={{ num }}" class="btn small">{{ num }}</a>
+                {% endif %}
+            {% endfor %}
+        </div>
+
+        {% if genres.has_next %}
+            <a href="?page={{ genres.next_page_number }}" class="btn small">Следующая ›</a>
+            <a href="?page={{ genres.paginator.num_pages }}" class="btn small">Последняя »</a>
+        {% endif %}
+    </div>
+    {% endif %}
+
+    <div style="text-align: center; margin-top: 15px; color: #666; font-size: 14px;">
+        Страница {{ genres.number }} из {{ genres.paginator.num_pages }} (всего {{ total_genres }} жанров)
+    </div>
+</div>
+{% endblock %}

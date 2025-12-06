@@ -83,8 +83,51 @@
         </table>
     </div>
 
+    {% if delivery %}
+    <div style="background: white; padding: 20px; border-radius: 8px; margin-bottom: 20px;">
+        <h3 style="margin-top: 0; margin-bottom: 15px;">Информация о доставке</h3>
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px;">
+            <div>
+                <label style="display: block; font-weight: bold; margin-bottom: 5px;">Адрес доставки</label>
+                <p style="margin: 0;">{{ delivery.delivery_address }}</p>
+            </div>
+            <div>
+                <label style="display: block; font-weight: bold; margin-bottom: 5px;">Дата доставки</label>
+                <p style="margin: 0;">{{ delivery.delivery_date|default:"Не указана" }}</p>
+            </div>
+            <div>
+                <label style="display: block; font-weight: bold; margin-bottom: 5px;">Сотрудник доставки</label>
+                <p style="margin: 0;">{{ delivery.employee.full_name|default:"Не назначен" }}</p>
+            </div>
+            <div>
+                <label style="display: block; font-weight: bold; margin-bottom: 5px;">Статус доставки</label>
+                <p style="margin: 0;">
+                    {% if delivery.status == 'В ожидании' %}
+                        <span style="background: #fbbf24; color: #78350f; padding: 4px 8px; border-radius: 4px; font-weight: bold;">⏳ {{ delivery.status }}</span>
+                    {% elif delivery.status == 'В пути' %}
+                        <span style="background: #60a5fa; color: #1e3a8a; padding: 4px 8px; border-radius: 4px; font-weight: bold;">🚚 {{ delivery.status }}</span>
+                    {% elif delivery.status == 'Завершена' %}
+                        <span style="background: #86efac; color: #166534; padding: 4px 8px; border-radius: 4px; font-weight: bold;">✅ {{ delivery.status }}</span>
+                    {% else %}
+                        <span style="background: #fca5a5; color: #7f1d1d; padding: 4px 8px; border-radius: 4px; font-weight: bold;">❌ {{ delivery.status }}</span>
+                    {% endif %}
+                </p>
+            </div>
+        </div>
+    </div>
+    {% else %}
+    <div style="background: #fff3cd; padding: 20px; border-radius: 8px; margin-bottom: 20px; border-left: 4px solid #ffc107;">
+        <p style="margin: 0; color: #856404;"><strong>⚠️ Доставка не создана</strong></p>
+    </div>
+    {% endif %}
+
     <div style="display: flex; gap: 10px;">
-        <a href="{% url 'adminpanel:order_update_status' order.id %}" class="btn">Изменить статус</a>
+        <a href="{% url 'adminpanel:order_update_status' order.id %}" class="btn">Изменить статус платежа</a>
+        {% if delivery %}
+            <a href="{% url 'adminpanel:delivery_update_status' delivery.id %}" class="btn">Изменить статус доставки</a>
+        {% else %}
+            <a href="{% url 'adminpanel:delivery_create' order.id %}" class="btn">Создать доставку</a>
+        {% endif %}
         <a href="{% url 'adminpanel:orders' %}" class="btn muted">← Назад к заказам</a>
     </div>
 </div>

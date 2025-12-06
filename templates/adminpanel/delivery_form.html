@@ -1,0 +1,45 @@
+{% extends 'adminpanel/base.html' %}
+{% block title %}Создать доставку — Admin{% endblock %}
+{% block header %}Создать доставку для заказа #{{ order.order_number }}{% endblock %}
+{% block content %}
+
+<div class="panel">
+    <div style="background: white; padding: 20px; border-radius: 8px; margin-bottom: 20px;">
+        <h3 style="margin-top: 0; margin-bottom: 15px;">Информация о заказе</h3>
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; margin-bottom: 20px;">
+            <div>
+                <label style="display: block; font-weight: bold; margin-bottom: 5px;">Номер заказа</label>
+                <p style="margin: 0; font-size: 18px; color: #0066cc;">#{{ order.order_number }}</p>
+            </div>
+            <div>
+                <label style="display: block; font-weight: bold; margin-bottom: 5px;">Пользователь</label>
+                <p style="margin: 0;">{{ order.user.email }}<br><small>{{ order.user.username }}</small></p>
+            </div>
+            <div>
+                <label style="display: block; font-weight: bold; margin-bottom: 5px;">Адрес пользователя</label>
+                <p style="margin: 0;">{{ order.user.address }}</p>
+            </div>
+        </div>
+    </div>
+
+    <form method="POST" style="background: white; padding: 20px; border-radius: 8px; margin-bottom: 20px;">
+        {% csrf_token %}
+        
+        <div style="margin-bottom: 20px;">
+            <label for="delivery_address" style="display: block; font-weight: bold; margin-bottom: 8px;">Адрес доставки</label>
+            <textarea name="delivery_address" id="delivery_address" style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 4px; font-family: inherit;" required>{{ order.user.address }}</textarea>
+        </div>
+
+        <div style="margin-bottom: 20px;">
+            <label for="delivery_date" style="display: block; font-weight: bold; margin-bottom: 8px;">Дата доставки (опционально)</label>
+            <input type="text" name="delivery_date" id="delivery_date" placeholder="Например: 15.12.2025" style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 4px;">
+        </div>
+
+        <div style="display: flex; gap: 10px;">
+            <button type="submit" class="btn">Создать доставку</button>
+            <a href="{% url 'adminpanel:order_detail' order.id %}" class="btn muted">← Отмена</a>
+        </div>
+    </form>
+</div>
+
+{% endblock %}

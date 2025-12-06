@@ -1,0 +1,71 @@
+{% extends 'adminpanel/base.html' %}
+{% block title %}Countries — Admin{% endblock %}
+{% block header %}Страны{% endblock %}
+{% block content %}
+<div class="panel">
+    <!-- Статистика -->
+    <div style="background: white; padding: 20px; border-radius: 8px; margin-bottom: 20px;">
+        <h3 style="margin-top: 0; margin-bottom: 15px;">Статистика стран</h3>
+        <p style="margin: 0; color: #666;">
+            Всего стран: <strong style="font-size: 18px; color: #0066cc;">{{ total_countries }}</strong>
+        </p>
+    </div>
+
+    <!-- Таблица стран -->
+    <div class="table-wrap">
+        <table>
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Название страны</th>
+                    <th>Слаг</th>
+                    <th>Количество авторов</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for country in countries %}
+                <tr>
+                    <td>{{ country.id }}</td>
+                    <td><strong>{{ country.country }}</strong></td>
+                    <td><code style="background: #f3f4f6; padding: 4px 8px; border-radius: 4px;">{{ country.slug }}</code></td>
+                    <td>{{ country.authors_set.count }}</td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="4" style="text-align: center; padding: 20px; color: #999;">Стран не найдено</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Пагинация -->
+    {% if countries.has_other_pages %}
+    <div style="display: flex; justify-content: center; align-items: center; gap: 10px; margin-top: 20px; flex-wrap: wrap;">
+        {% if countries.has_previous %}
+            <a href="?page=1" class="btn small">« Первая</a>
+            <a href="?page={{ countries.previous_page_number }}" class="btn small">‹ Предыдущая</a>
+        {% endif %}
+
+        <div style="display: flex; gap: 5px;">
+            {% for num in countries.paginator.page_range %}
+                {% if countries.number == num %}
+                    <span class="btn small" style="background: #0066cc; color: white; cursor: default;">{{ num }}</span>
+                {% elif num > countries.number|add:'-3' and num < countries.number|add:'3' %}
+                    <a href="?page={{ num }}" class="btn small">{{ num }}</a>
+                {% endif %}
+            {% endfor %}
+        </div>
+
+        {% if countries.has_next %}
+            <a href="?page={{ countries.next_page_number }}" class="btn small">Следующая ›</a>
+            <a href="?page={{ countries.paginator.num_pages }}" class="btn small">Последняя »</a>
+        {% endif %}
+    </div>
+    {% endif %}
+
+    <div style="text-align: center; margin-top: 15px; color: #666; font-size: 14px;">
+        Страница {{ countries.number }} из {{ countries.paginator.num_pages }} (всего {{ total_countries }} стран)
+    </div>
+</div>
+{% endblock %}
