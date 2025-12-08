@@ -49,16 +49,64 @@ def users_list(request):
 @_staff_required
 def orders_list(request):
 	from django.core.paginator import Paginator
+	from django.db.models import Q
 	
+
 	orders_all = Order.objects.all().order_by('-created_at')
-	paginator = Paginator(orders_all, 10)  # 10 заказов на странице
+	
+	
+	payment_status = request.GET.get('payment_status')
+	if payment_status:
+		orders_all = orders_all.filter(payment__status=payment_status)
+	
+
+	delivery_status = request.GET.get('delivery_status')
+	if delivery_status:
+		orders_all = orders_all.filter(delivery__status=delivery_status)
+	
+
+	date_from = request.GET.get('date_from')
+	date_to = request.GET.get('date_to')
+	if date_from:
+		orders_all = orders_all.filter(created_at__gte=date_from)
+	if date_to:
+		orders_all = orders_all.filter(created_at__lte=date_to)
+	
+
+	price_from = request.GET.get('price_from')
+	price_to = request.GET.get('price_to')
+	if price_from:
+		try:
+			orders_all = orders_all.filter(total_price__gte=int(price_from))
+		except ValueError:
+			pass
+	if price_to:
+		try:
+			orders_all = orders_all.filter(total_price__lte=int(price_to))
+		except ValueError:
+			pass
+	
+
+	customer = request.GET.get('customer')
+	if customer:
+		orders_all = orders_all.filter(Q(user__email__icontains=customer) | Q(user__username__icontains=customer))
+	
+
+	product = request.GET.get('product')
+	if product:
+		orders_all = orders_all.filter(book__title__icontains=product).distinct()
+	
+
+	if product:
+		orders_all = orders_all.distinct()
+	
+	
+	paginator = Paginator(orders_all, 10)
 	page_number = request.GET.get('page')
 	orders = paginator.get_page(page_number)
 	
-	# Расчёт общей суммы всех заказов
-	total_sales = sum(order.total_price for order in orders_all)
 	
-	# Средняя сумма заказа
+	total_sales = sum(order.total_price for order in orders_all)
 	average_order = int(total_sales / orders_all.count()) if orders_all.count() > 0 else 0
 	
 	context = {
@@ -66,6 +114,15 @@ def orders_list(request):
 		'total_sales': total_sales,
 		'average_order': average_order,
 		'total_orders': orders_all.count(),
+		# Передаём текущие параметры фильтра для сохранения в формах
+		'payment_status': payment_status,
+		'delivery_status': delivery_status,
+		'date_from': date_from,
+		'date_to': date_to,
+		'price_from': price_from,
+		'price_to': price_to,
+		'customer': customer,
+		'product': product,
 	}
 	return render(request, 'adminpanel/orders.html', context)
 

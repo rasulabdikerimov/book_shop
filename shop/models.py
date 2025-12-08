@@ -177,6 +177,11 @@ class Cart(models.Model):
         return f'Cart of {self.user.username}'
     
 class Order(models.Model):
+    CANCEL_STATUS_CHOICES = [
+        ('Активен', 'Активен'),
+        ('Отменен', 'Отменен'),
+    ]
+    
     order_number = models.CharField(max_length=6, unique=True, 
                                     verbose_name='Номер заказа:')
     user = models.ForeignKey(CustomUser, on_delete=models.CASCADE,
@@ -184,6 +189,10 @@ class Order(models.Model):
     book = models.ManyToManyField(Book, verbose_name='Книга:')
     total_price = models.IntegerField(verbose_name='Общая цена заказа:')
     stock_deducted = models.BooleanField(default=False, verbose_name='Товар вычтен:')
+    cancel_status = models.CharField(max_length=20, 
+                                     verbose_name='Статус отмены:',
+                                     default='Активен',
+                                     choices=CANCEL_STATUS_CHOICES)
     created_at = models.DateTimeField(auto_now_add=True,
                                       verbose_name='Дата создания заказа:')
     updated_at = models.DateTimeField(auto_now=True,
@@ -196,6 +205,13 @@ class Order(models.Model):
 
     def __str__(self) -> str:
         return f'Order #{self.order_number} - {self.user.username}'
+    
+    def can_be_cancelled(self):
+        """Проверить может ли заказ быть отменен (доставка в ожидании или не создана)"""
+        delivery = self.delivery_set.first()
+        if not delivery:
+            return True  # Если доставка не создана, можно отменить
+        return delivery.status == 'В ожидании'  # Можно отменить только если доставка в ожидании
 class Payment(models.Model):
     STATUS_CHOICES = [
         ('В ожидании', 'В ожидании'),

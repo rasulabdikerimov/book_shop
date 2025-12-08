@@ -9,43 +9,43 @@
     <div class="grid grid-cols-1 md:grid-cols-2 gap-12">
         <!-- Левая часть - информация -->
         <div class="flex flex-col justify-center">
-            <h1 class="text-5xl font-bold text-gray-900 dark:text-white mb-6">🔐 Вход в Mylibrary</h1>
-            <p class="text-xl text-gray-600 dark:text-slate-400 mb-8">
+            <h1 class="text-5xl font-bold text-gray-900 mb-6">🔐 Вход в Mylibrary</h1>
+            <p class="text-xl text-gray-600 mb-8">
                 Войдите в свой аккаунт, чтобы получить доступ к избранному, отзывам и покупкам
             </p>
             <div class="space-y-6">
                 <div class="flex items-start gap-4">
                     <div class="text-3xl">📚</div>
                     <div>
-                        <h3 class="text-lg font-bold text-gray-900 dark:text-white">Персональная библиотека</h3>
-                        <p class="text-gray-600 dark:text-slate-400">Сохраняйте и организуйте свои любимые книги</p>
+                        <h3 class="text-lg font-bold text-gray-900">Персональная библиотека</h3>
+                        <p class="text-gray-600">Сохраняйте и организуйте свои любимые книги</p>
                     </div>
                 </div>
                 <div class="flex items-start gap-4">
                     <div class="text-3xl">⭐</div>
                     <div>
-                        <h3 class="text-lg font-bold text-gray-900 dark:text-white">Оставляйте отзывы</h3>
-                        <p class="text-gray-600 dark:text-slate-400">Делитесь впечатлениями и помогайте другим читателям</p>
+                        <h3 class="text-lg font-bold text-gray-900">Оставляйте отзывы</h3>
+                        <p class="text-gray-600">Делитесь впечатлениями и помогайте другим читателям</p>
                     </div>
                 </div>
                 <div class="flex items-start gap-4">
                     <div class="text-3xl">🛍️</div>
                     <div>
-                        <h3 class="text-lg font-bold text-gray-900 dark:text-white">Совершайте покупки</h3>
-                        <p class="text-gray-600 dark:text-slate-400">Быстрый и безопасный процесс оформления заказов</p>
+                        <h3 class="text-lg font-bold text-gray-900">Совершайте покупки</h3>
+                        <p class="text-gray-600">Быстрый и безопасный процесс оформления заказов</p>
                     </div>
                 </div>
             </div>
         </div>
 
         <!-- Правая часть - форма входа -->
-        <div class="bg-white dark:bg-slate-800 rounded-xl shadow-lg dark:shadow-xl p-8 transition-colors">
+        <div class="bg-white rounded-xl shadow-lg p-8 border border-gray-200">
             <form method="POST" class="space-y-6">
                 {% csrf_token %}
 
                 <!-- Email -->
                 <div>
-                    <label for="{{ form.email.id_for_label }}" class="block text-sm font-bold text-gray-900 dark:text-white mb-2">
+                    <label for="{{ form.email.id_for_label }}" class="block text-sm font-bold text-gray-900 mb-2">
                         📧 Email
                     </label>
                     <input 
@@ -53,17 +53,17 @@
                         name="email" 
                         id="{{ form.email.id_for_label }}"
                         placeholder="your@email.com"
-                        class="w-full px-4 py-3 rounded-lg bg-gray-50 dark:bg-slate-700 border-2 border-gray-300 dark:border-slate-600 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-transparent transition"
+                        class="w-full px-4 py-3 rounded-lg bg-white border-2 border-gray-300 text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-transparent transition"
                         required
                     >
                     {% if form.email.errors %}
-                        <p class="text-red-500 text-sm mt-1">{{ form.email.errors.0 }}</p>
+                        <p class="text-red-600 text-sm mt-1">{{ form.email.errors.0 }}</p>
                     {% endif %}
                 </div>
 
                 <!-- Пароль -->
                 <div>
-                    <label for="{{ form.password.id_for_label }}" class="block text-sm font-bold text-gray-900 dark:text-white mb-2">
+                    <label for="{{ form.password.id_for_label }}" class="block text-sm font-bold text-gray-900 mb-2">
                         🔑 Пароль
                     </label>
                     <div class="relative">
@@ -72,42 +72,42 @@
                             name="password" 
                             id="{{ form.password.id_for_label }}"
                             placeholder="••••••••"
-                            class="w-full px-4 py-3 pr-12 rounded-lg bg-gray-50 dark:bg-slate-700 border-2 border-gray-300 dark:border-slate-600 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-transparent transition password-input"
+                            class="w-full px-4 py-3 pr-12 rounded-lg bg-white border-2 border-gray-300 text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-transparent transition password-input"
                             required
                         >
                         <button 
                             type="button"
-                            class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 dark:text-slate-400 hover:text-gray-700 dark:hover:text-slate-300 transition cursor-pointer toggle-password"
+                            class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700 transition cursor-pointer toggle-password"
                             onclick="togglePassword(this)"
                         >
                             👁️
                         </button>
                     </div>
                     {% if form.password.errors %}
-                        <p class="text-red-500 text-sm mt-1">{{ form.password.errors.0 }}</p>
+                        <p class="text-red-600 text-sm mt-1">{{ form.password.errors.0 }}</p>
                     {% endif %}
                 </div>
 
                 <!-- Сообщение об ошибке (если есть) -->
                 {% if form.non_field_errors %}
-                    <div class="bg-red-100 dark:bg-red-900 border-l-4 border-red-500 p-4 rounded">
-                        <p class="text-red-700 dark:text-red-200">{{ form.non_field_errors.0 }}</p>
+                    <div class="bg-red-100 border-l-4 border-red-500 p-4 rounded">
+                        <p class="text-red-700">{{ form.non_field_errors.0 }}</p>
                     </div>
                 {% endif %}
 
                 <!-- Кнопка входа -->
                 <button 
                     type="submit" 
-                    class="w-full bg-gradient-to-r from-blue-600 to-blue-800 dark:from-slate-900 dark:to-black text-white font-bold py-3 px-4 rounded-lg hover:from-blue-700 hover:to-blue-900 dark:hover:from-slate-800 dark:hover:to-slate-900 transition-all transform hover:shadow-lg active:scale-95"
+                    class="w-full bg-gradient-to-r from-blue-600 to-blue-800 text-white font-bold py-3 px-4 rounded-lg hover:from-blue-700 hover:to-blue-900 transition-all transform hover:shadow-lg active:scale-95"
                 >
                     🔓 Войти
                 </button>
 
                 <!-- Ссылка на регистрацию -->
-                <div class="text-center pt-4 border-t border-gray-300 dark:border-slate-700">
-                    <p class="text-gray-600 dark:text-slate-400">
+                <div class="text-center pt-4 border-t border-gray-300">
+                    <p class="text-gray-600">
                         Нет аккаунта? 
-                        <a href="{% url 'registration' %}" class="text-blue-600 dark:text-blue-400 font-bold hover:text-blue-800 dark:hover:text-blue-300 transition">
+                        <a href="{% url 'registration' %}" class="text-blue-600 font-bold hover:text-blue-800 transition">
                             Зарегистрируйтесь
                         </a>
                     </p>
@@ -115,7 +115,7 @@
 
                 <!-- Ссылка на главную -->
                 <div class="text-center">
-                    <a href="{% url 'homepage' %}" class="text-gray-600 dark:text-slate-400 hover:text-gray-900 dark:hover:text-white transition">
+                    <a href="{% url 'homepage' %}" class="text-gray-600 hover:text-gray-900 transition">
                         ← Вернуться на главную
                     </a>
                 </div>

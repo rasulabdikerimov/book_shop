@@ -127,7 +127,7 @@ def search_results(request):
         'languages': languages,
         'base_query': base_query,
     }
-    # show_advanced -> True when user explicitly requested expanded filters
+    
     show_advanced = bool(request.GET.get('show_advanced'))
     context['show_advanced'] = show_advanced
     return render(request, 'shop/search_results.html', context)
@@ -149,7 +149,7 @@ def book_detail(request, book_slug):
             new_review.user = request.user
             new_review.save()
             
-            # Обработка загруженных изображений
+         
             for img in request.FILES.getlist('images'):
                 ReviewImage.objects.create(review=new_review, image=img)
             
@@ -273,7 +273,7 @@ def update_profile(request):
 
 
 def _get_cart(session):
-    """Return cart dict from session. Structure: {book_id: quantity} """
+   
     return session.get('cart', {})
 
 
@@ -284,20 +284,19 @@ def _save_cart(session, cart):
 
 def add_to_cart(request, book_id):
     book = get_object_or_404(Book, id=book_id)
-    # Only support POST
+
     if request.method != 'POST':
         return redirect('detail', book_slug=book.slug)
 
     cart = _get_cart(request.session)
     qty = int(request.POST.get('quantity', 1))
-    # ensure qty >=1
+ 
     if qty < 1:
         qty = 1
 
     cart[str(book_id)] = cart.get(str(book_id), 0) + qty
     _save_cart(request.session, cart)
 
-    # If request is AJAX, return JSON
     if request.headers.get('x-requested-with') == 'XMLHttpRequest':
         return JsonResponse({'ok': True, 'cart_count': sum(cart.values())})
 
@@ -326,7 +325,7 @@ def cart_view(request):
 
 
 def update_cart(request):
-    # expects POST with pairs book_id -> quantity
+   
     if request.method != 'POST':
         return redirect('cart')
 
@@ -404,7 +403,7 @@ def cart(request):
 
 
 def checkout(request):
-    """Оформление заказа из корзины сессии"""
+   
     if not request.user.is_authenticated:
         return redirect('login')
     
@@ -413,11 +412,10 @@ def checkout(request):
         return redirect('cart')
     
     if request.method == 'POST':
-        # Получаем данные из формы
+    
         delivery_address = request.POST.get('delivery_address', request.user.address).strip()
         payment_method = request.POST.get('payment_method', 'card').strip()
-        
-        # Получаем книги из корзины
+     
         book_ids = [int(k) for k in cart.keys()]
         books = Book.objects.filter(id__in=book_ids)
         
@@ -474,7 +472,7 @@ def checkout(request):
 
 
 def order_confirmation(request, order_id):
-    """Страница подтверждения заказа"""
+   
     order = get_object_or_404(Order, id=order_id, user=request.user)
     books = order.book.all()
     payment = order.payment_set.first()
@@ -485,3 +483,37 @@ def order_confirmation(request, order_id):
         'payment': payment,
     }
     return render(request, 'shop/order_confirmation.html', context)
+
+
+def cancel_order(request, order_id):
+    """Отмена заказа пользователем"""
+    order = get_object_or_404(Order, id=order_id, user=request.user)
+    
+    # Проверяем может ли быть отменен заказ
+    if not order.can_be_cancelled():
+        return render(request, 'shop/order_confirmation.html', {
+            'order': order,
+            'books': order.book.all(),
+            'payment': order.payment_set.first(),
+            'error': 'Заказ находится в пути и не может быть отменен'
+        })
+    
+    if request.method == 'POST':
+        # Отмечаем заказ как отменен
+        order.cancel_status = 'Отменен'
+        order.save()
+        
+        # Отмечаем платеж как отменен
+        payment = order.payment_set.first()
+        if payment and payment.status == 'В ожидании':
+            payment.status = 'Отменен'
+            payment.save()
+        
+        return redirect('profile')
+    
+    context = {
+        'order': order,
+        'books': order.book.all(),
+        'payment': order.payment_set.first(),
+    }
+    return render(request, 'shop/cancel_order_confirm.html', context)

@@ -12,6 +12,77 @@
         <button onclick="document.getElementById('sales-modal').style.display='block'" class="btn" style="height: fit-content;">📊 Подробная статистика</button>
     </div>
 
+    <!-- Форма расширенного поиска -->
+    <div style="background: white; padding: 20px; border-radius: 8px; margin-bottom: 20px; border: 1px solid #ddd;">
+        <h3 style="margin-top: 0; margin-bottom: 15px;">🔍 Расширенный поиск</h3>
+        <form method="GET" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px;">
+            
+            <!-- Поиск по клиентам -->
+            <div>
+                <label style="display: block; font-weight: bold; margin-bottom: 5px;">Клиент (email/username)</label>
+                <input type="text" name="customer" value="{{ customer }}" placeholder="Поиск по клиенту..." style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
+            </div>
+            
+            <!-- Поиск по продуктам -->
+            <div>
+                <label style="display: block; font-weight: bold; margin-bottom: 5px;">Продукт</label>
+                <input type="text" name="product" value="{{ product }}" placeholder="Название книги..." style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
+            </div>
+            
+            <!-- Фильтр по статусу платежа -->
+            <div>
+                <label style="display: block; font-weight: bold; margin-bottom: 5px;">Статус платежа</label>
+                <select name="payment_status" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
+                    <option value="">-- Все статусы --</option>
+                    <option value="В ожидании" {% if payment_status == 'В ожидании' %}selected{% endif %}>⏳ В ожидании</option>
+                    <option value="Завершен" {% if payment_status == 'Завершен' %}selected{% endif %}>✅ Завершен</option>
+                    <option value="Отменен" {% if payment_status == 'Отменен' %}selected{% endif %}>❌ Отменен</option>
+                </select>
+            </div>
+            
+            <!-- Фильтр по статусу доставки -->
+            <div>
+                <label style="display: block; font-weight: bold; margin-bottom: 5px;">Статус доставки</label>
+                <select name="delivery_status" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
+                    <option value="">-- Все статусы --</option>
+                    <option value="В ожидании" {% if delivery_status == 'В ожидании' %}selected{% endif %}>⏳ В ожидании</option>
+                    <option value="В пути" {% if delivery_status == 'В пути' %}selected{% endif %}>🚚 В пути</option>
+                    <option value="Завершена" {% if delivery_status == 'Завершена' %}selected{% endif %}>✅ Завершена</option>
+                    <option value="Отменена" {% if delivery_status == 'Отменена' %}selected{% endif %}>❌ Отменена</option>
+                </select>
+            </div>
+            
+            <!-- Фильтр по дате от -->
+            <div>
+                <label style="display: block; font-weight: bold; margin-bottom: 5px;">Дата от</label>
+                <input type="date" name="date_from" value="{{ date_from }}" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
+            </div>
+            
+            <!-- Фильтр по дате до -->
+            <div>
+                <label style="display: block; font-weight: bold; margin-bottom: 5px;">Дата до</label>
+                <input type="date" name="date_to" value="{{ date_to }}" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
+            </div>
+            
+            <!-- Фильтр по цене от -->
+            <div>
+                <label style="display: block; font-weight: bold; margin-bottom: 5px;">Цена от (₽)</label>
+                <input type="number" name="price_from" value="{{ price_from }}" placeholder="Мин. цена..." style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
+            </div>
+            
+            <!-- Фильтр по цене до -->
+            <div>
+                <label style="display: block; font-weight: bold; margin-bottom: 5px;">Цена до (₽)</label>
+                <input type="number" name="price_to" value="{{ price_to }}" placeholder="Макс. цена..." style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
+            </div>
+            
+            <div style="display: flex; align-items: flex-end; gap: 10px;">
+                <button type="submit" class="btn" style="background-color: #28a745; flex: 1;">🔍 Поиск</button>
+                <a href="{% url 'adminpanel:orders' %}" class="btn muted" style="flex: 1; text-align: center;">✕ Сброс</a>
+            </div>
+        </form>
+    </div>
+
     <!-- Таблица заказов -->
     <div class="table-wrap">
         <table>
@@ -22,13 +93,15 @@
                     <th>Названия книг</th>
                     <th>Сумма</th>
                     <th>Дата</th>
-                    <th>Статус</th>
+                    <th>Статус платежа</th>
+                    <th>Статус доставки</th>
+                    <th>Статус заказа</th>
                     <th>Действия</th>
                 </tr>
             </thead>
             <tbody>
                 {% for o in orders %}
-                <tr>
+                <tr {% if o.cancel_status == 'Отменен' %}style="background-color: #ffe0e0;"{% endif %}>
                     <td><strong>#{{ o.order_number }}</strong></td>
                     <td>{{ o.user.email }}</td>
                     <td>
@@ -50,9 +123,37 @@
                         {% endif %}
                     </td>
                     <td>
+                        {% with delivery=o.delivery_set.first %}
+                            {% if delivery %}
+                                {% if delivery.status == 'В ожидании' %}
+                                    <span class="badge warning">⏳ {{ delivery.status }}</span>
+                                {% elif delivery.status == 'В пути' %}
+                                    <span class="badge info">🚚 {{ delivery.status }}</span>
+                                {% elif delivery.status == 'Завершена' %}
+                                    <span class="badge success">✅ {{ delivery.status }}</span>
+                                {% else %}
+                                    <span class="badge error">❌ {{ delivery.status }}</span>
+                                {% endif %}
+                            {% else %}
+                                <span class="badge muted">— Не создана</span>
+                            {% endif %}
+                        {% endwith %}
+                    </td>
+                    <td>
+                        {% if o.cancel_status == 'Отменен' %}
+                            <span class="badge error">❌ Отменен</span>
+                        {% else %}
+                            <span class="badge success">✅ Активен</span>
+                        {% endif %}
+                    </td>
+                    <td>
                         <a href="{% url 'adminpanel:order_detail' o.id %}" class="btn small">Просмотр</a>
                         <a href="{% url 'adminpanel:order_update_status' o.id %}" class="btn small muted">Статус</a>
                     </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="9" style="text-align: center; padding: 20px; color: #999;">По вашему запросу заказов не найдено</td>
                 </tr>
                 {% endfor %}
             </tbody>
@@ -63,8 +164,8 @@
     {% if orders.has_other_pages %}
     <div style="display: flex; justify-content: center; align-items: center; gap: 10px; margin-top: 20px; flex-wrap: wrap;">
         {% if orders.has_previous %}
-            <a href="?page=1" class="btn small">« Первая</a>
-            <a href="?page={{ orders.previous_page_number }}" class="btn small">‹ Предыдущая</a>
+            <a href="?page=1{% if payment_status %}&payment_status={{ payment_status }}{% endif %}{% if delivery_status %}&delivery_status={{ delivery_status }}{% endif %}{% if date_from %}&date_from={{ date_from }}{% endif %}{% if date_to %}&date_to={{ date_to }}{% endif %}{% if price_from %}&price_from={{ price_from }}{% endif %}{% if price_to %}&price_to={{ price_to }}{% endif %}{% if customer %}&customer={{ customer }}{% endif %}{% if product %}&product={{ product }}{% endif %}" class="btn small">« Первая</a>
+            <a href="?page={{ orders.previous_page_number }}{% if payment_status %}&payment_status={{ payment_status }}{% endif %}{% if delivery_status %}&delivery_status={{ delivery_status }}{% endif %}{% if date_from %}&date_from={{ date_from }}{% endif %}{% if date_to %}&date_to={{ date_to }}{% endif %}{% if price_from %}&price_from={{ price_from }}{% endif %}{% if price_to %}&price_to={{ price_to }}{% endif %}{% if customer %}&customer={{ customer }}{% endif %}{% if product %}&product={{ product }}{% endif %}" class="btn small">‹ Предыдущая</a>
         {% endif %}
 
         <div style="display: flex; gap: 5px;">
@@ -72,21 +173,21 @@
                 {% if orders.number == num %}
                     <span class="btn small" style="background: #0066cc; color: white; cursor: default;">{{ num }}</span>
                 {% elif num > orders.number|add:'-3' and num < orders.number|add:'3' %}
-                    <a href="?page={{ num }}" class="btn small">{{ num }}</a>
+                    <a href="?page={{ num }}{% if payment_status %}&payment_status={{ payment_status }}{% endif %}{% if delivery_status %}&delivery_status={{ delivery_status }}{% endif %}{% if date_from %}&date_from={{ date_from }}{% endif %}{% if date_to %}&date_to={{ date_to }}{% endif %}{% if price_from %}&price_from={{ price_from }}{% endif %}{% if price_to %}&price_to={{ price_to }}{% endif %}{% if customer %}&customer={{ customer }}{% endif %}{% if product %}&product={{ product }}{% endif %}" class="btn small">{{ num }}</a>
                 {% endif %}
             {% endfor %}
         </div>
 
         {% if orders.has_next %}
-            <a href="?page={{ orders.next_page_number }}" class="btn small">Следующая ›</a>
-            <a href="?page={{ orders.paginator.num_pages }}" class="btn small">Последняя »</a>
+            <a href="?page={{ orders.next_page_number }}{% if payment_status %}&payment_status={{ payment_status }}{% endif %}{% if delivery_status %}&delivery_status={{ delivery_status }}{% endif %}{% if date_from %}&date_from={{ date_from }}{% endif %}{% if date_to %}&date_to={{ date_to }}{% endif %}{% if price_from %}&price_from={{ price_from }}{% endif %}{% if price_to %}&price_to={{ price_to }}{% endif %}{% if customer %}&customer={{ customer }}{% endif %}{% if product %}&product={{ product }}{% endif %}" class="btn small">Следующая ›</a>
+            <a href="?page={{ orders.paginator.num_pages }}{% if payment_status %}&payment_status={{ payment_status }}{% endif %}{% if delivery_status %}&delivery_status={{ delivery_status }}{% endif %}{% if date_from %}&date_from={{ date_from }}{% endif %}{% if date_to %}&date_to={{ date_to }}{% endif %}{% if price_from %}&price_from={{ price_from }}{% endif %}{% if price_to %}&price_to={{ price_to }}{% endif %}{% if customer %}&customer={{ customer }}{% endif %}{% if product %}&product={{ product }}{% endif %}" class="btn small">Последняя »</a>
         {% endif %}
     </div>
     {% endif %}
 
     <!-- Информация о пагинации -->
     <div style="text-align: center; margin-top: 15px; color: #666; font-size: 14px;">
-        Страница {{ orders.number }} из {{ orders.paginator.num_pages }} (всего {{ orders.paginator.count }} заказов)
+        Страница {{ orders.number }} из {{ orders.paginator.num_pages }} (всего {{ total_orders }} заказов)
     </div>
 </div>
 
@@ -129,6 +230,8 @@
     .badge.warning { background-color: #fbbf24; color: #78350f; }
     .badge.success { background-color: #86efac; color: #166534; }
     .badge.error { background-color: #fca5a5; color: #7f1d1d; }
+    .badge.info { background-color: #60a5fa; color: #1e3a8a; }
+    .badge.muted { background-color: #e5e7eb; color: #6b7280; }
     
     .btn.small {
         padding: 6px 12px;

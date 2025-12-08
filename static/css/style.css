@@ -6,15 +6,37 @@
 }
 
 :root {
-    --primary-color: #2563eb;
+    /* Light Theme Colors */
+    --primary-color: #3b82f6;
+    --primary-dark: #1e40af;
+    --primary-light: #60a5fa;
     --secondary-color: #1e40af;
     --success-color: #10b981;
+    --success-light: #d1fae5;
     --danger-color: #ef4444;
+    --danger-light: #fee2e2;
     --warning-color: #f59e0b;
+    --warning-light: #fef3c7;
+    --info-color: #0ea5e9;
+    --info-light: #cffafe;
     --light-bg: #f9fafb;
+    --light-bg-secondary: #f3f4f6;
     --dark-text: #1f2937;
     --light-text: #6b7280;
     --border-color: #e5e7eb;
+    --white: #ffffff;
+}
+
+/* Dark theme support */
+@media (prefers-color-scheme: dark) {
+    :root {
+        --light-bg: #0f172a;
+        --light-bg-secondary: #1e293b;
+        --dark-text: #f1f5f9;
+        --light-text: #cbd5e1;
+        --border-color: #334155;
+        --white: #1e293b;
+    }
 }
 
 body {
@@ -32,25 +54,25 @@ a {
 }
 
 a:hover {
-    color: var(--secondary-color);
+    color: var(--primary-dark);
 }
 
 /* Навигация */
 nav, .navbar {
-    background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    background: linear-gradient(135deg, #1e3a8a 0%, #1e40af 100%);
+    box-shadow: 0 4px 12px rgba(37, 99, 235, 0.15);
     padding: 1rem 0;
 }
 
 nav a, .navbar a {
-    color: white;
+    color: #ffffff;
     font-weight: 500;
-    transition: opacity 0.3s ease;
+    transition: opacity 0.3s ease, color 0.3s ease;
 }
 
 nav a:hover, .navbar a:hover {
-    opacity: 0.8;
-    color: white;
+    opacity: 0.9;
+    color: #93c5fd;
 }
 
 /* Контейнер */
@@ -62,11 +84,12 @@ nav a:hover, .navbar a:hover {
 
 /* Секции */
 section {
-    background: white;
+    background: var(--white);
     border-radius: 12px;
     padding: 2rem;
     margin-bottom: 2rem;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    border: 1px solid var(--border-color);
 }
 
 section h2, section h3 {
@@ -80,17 +103,18 @@ section h2, section h3 {
 
 /* Карточки книг */
 .card {
-    border: none;
+    border: 1px solid var(--border-color);
     border-radius: 12px;
     overflow: hidden;
     transition: all 0.3s ease;
-    background: white;
+    background: var(--white);
     height: 100%;
 }
 
 .card:hover {
     transform: translateY(-8px);
-    box-shadow: 0 12px 24px rgba(0, 0, 0, 0.15);
+    box-shadow: 0 12px 24px rgba(37, 99, 235, 0.12);
+    border-color: var(--primary-light);
 }
 
 .card-img-top {
@@ -127,15 +151,19 @@ section h2, section h3 {
 }
 
 .btn-primary {
-    background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
+    background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-dark) 100%);
     color: white;
 }
 
 .btn-primary:hover {
-    background: linear-gradient(135deg, var(--secondary-color) 0%, #1e3a8a 100%);
+    background: linear-gradient(135deg, var(--primary-dark) 0%, #1e3a8a 100%);
     color: white;
     transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
+    box-shadow: 0 6px 16px rgba(37, 99, 235, 0.35);
+}
+
+.btn-primary:active {
+    transform: translateY(0);
 }
 
 .btn-primary.btn-sm {
@@ -154,6 +182,28 @@ section h2, section h3 {
     border-color: var(--primary-color);
     background: var(--primary-color);
     color: white;
+}
+
+.btn-success {
+    background: var(--success-color);
+    color: white;
+}
+
+.btn-success:hover {
+    background: #059669;
+    transform: translateY(-2px);
+    box-shadow: 0 6px 16px rgba(16, 185, 129, 0.35);
+}
+
+.btn-danger {
+    background: var(--danger-color);
+    color: white;
+}
+
+.btn-danger:hover {
+    background: #dc2626;
+    transform: translateY(-2px);
+    box-shadow: 0 6px 16px rgba(239, 68, 68, 0.35);
 }
 
 /* Текстовые элементы */
@@ -186,8 +236,8 @@ section h2, section h3 {
 
 .rounded-circle:hover {
     transform: scale(1.1);
-    box-shadow: 0 8px 16px rgba(37, 99, 235, 0.2);
-    border-color: var(--secondary-color);
+    box-shadow: 0 8px 16px rgba(37, 99, 235, 0.25);
+    border-color: var(--primary-dark);
 }
 
 .col-md-2 {
@@ -202,6 +252,7 @@ section h2, section h3 {
     margin-top: 0.75rem;
     font-weight: 500;
     font-size: 0.95rem;
+    color: var(--dark-text);
 }
 
 /* Цены */
@@ -302,7 +353,7 @@ section h2, section h3 {
 
 /* Footer */
 footer {
-    background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
+    background: linear-gradient(135deg, #1e3a8a 0%, #1e40af 100%);
     color: white;
     text-align: center;
     padding: 2rem 0;
@@ -310,11 +361,12 @@ footer {
 }
 
 footer a {
-    color: white;
+    color: #93c5fd;
+    transition: color 0.3s ease;
 }
 
 footer a:hover {
-    opacity: 0.8;
+    color: #ffffff;
 }
 
 /* Переходы и анимации */
@@ -328,12 +380,14 @@ input, textarea, select {
     padding: 0.75rem;
     font-size: 1rem;
     transition: border-color 0.3s ease, box-shadow 0.3s ease;
+    background-color: var(--white);
+    color: var(--dark-text);
 }
 
 input:focus, textarea:focus, select:focus {
     outline: none;
     border-color: var(--primary-color);
-    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
 }
 
 /* Список */
@@ -351,6 +405,8 @@ table {
     border-collapse: collapse;
     border-radius: 12px;
     overflow: hidden;
+    background: var(--white);
+    border: 1px solid var(--border-color);
 }
 
 th {
@@ -364,10 +420,11 @@ th {
 td {
     padding: 1rem;
     border-bottom: 1px solid var(--border-color);
+    color: var(--dark-text);
 }
 
 tr:hover {
-    background: var(--light-bg);
+    background: var(--light-bg-secondary);
 }
 
 /* Успешные и ошибочные сообщения */
@@ -375,22 +432,29 @@ tr:hover {
     padding: 1rem;
     border-radius: 8px;
     margin-bottom: 1rem;
+    border: 1px solid;
 }
 
 .alert-success {
-    background: rgba(16, 185, 129, 0.1);
-    border: 1px solid var(--success-color);
-    color: var(--success-color);
+    background: var(--success-light);
+    border-color: var(--success-color);
+    color: #065f46;
 }
 
 .alert-danger {
-    background: rgba(239, 68, 68, 0.1);
-    border: 1px solid var(--danger-color);
-    color: var(--danger-color);
+    background: var(--danger-light);
+    border-color: var(--danger-color);
+    color: #7f1d1d;
 }
 
 .alert-warning {
-    background: rgba(245, 158, 11, 0.1);
-    border: 1px solid var(--warning-color);
-    color: var(--warning-color);
+    background: var(--warning-light);
+    border-color: var(--warning-color);
+    color: #78350f;
+}
+
+.alert-info {
+    background: var(--info-light);
+    border-color: var(--info-color);
+    color: #0c4a6e;
 }

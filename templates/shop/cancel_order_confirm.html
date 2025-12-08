@@ -1,0 +1,85 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Отмена заказа - Mylibrary{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 max-w-2xl py-12">
+    <div class="bg-white dark:bg-slate-800 rounded-xl shadow-lg dark:shadow-xl p-8 transition-colors">
+        <div class="text-center mb-8">
+            <div class="text-6xl mb-4">⚠️</div>
+            <h1 class="text-3xl font-bold text-gray-900 dark:text-white mb-2">Отмена заказа</h1>
+            <p class="text-gray-600 dark:text-slate-400">Заказ #{{ order.order_number }}</p>
+        </div>
+
+        <!-- Информация о заказе -->
+        <div class="bg-gray-50 dark:bg-slate-700 rounded-lg p-6 mb-8">
+            <div class="grid grid-cols-2 gap-4 mb-6">
+                <div>
+                    <p class="text-sm text-gray-600 dark:text-slate-400">Сумма заказа:</p>
+                    <p class="text-2xl font-bold text-gray-900 dark:text-white">{{ order.total_price }} ₽</p>
+                </div>
+                <div>
+                    <p class="text-sm text-gray-600 dark:text-slate-400">Дата заказа:</p>
+                    <p class="text-xl font-semibold text-gray-900 dark:text-white">{{ order.created_at|date:"d.m.Y H:i" }}</p>
+                </div>
+            </div>
+
+            <div class="border-t border-gray-300 dark:border-slate-600 pt-4">
+                <p class="text-sm font-semibold text-gray-700 dark:text-slate-300 mb-3">📚 Книги в заказе:</p>
+                <ul class="space-y-2">
+                    {% for book in books %}
+                        <li class="text-sm text-gray-600 dark:text-slate-400">
+                            • <strong>{{ book.title }}</strong> — {{ book.price }} ₽
+                        </li>
+                    {% endfor %}
+                </ul>
+            </div>
+
+            {% with payment=order.payment_set.first %}
+                {% if payment %}
+                    <div class="border-t border-gray-300 dark:border-slate-600 pt-4 mt-4">
+                        <p class="text-sm text-gray-600 dark:text-slate-400">
+                            💳 Способ оплаты: <span class="font-semibold text-gray-900 dark:text-white">{{ payment.payment_method }}</span>
+                        </p>
+                        <p class="text-sm text-gray-600 dark:text-slate-400">
+                            Статус платежа: 
+                            <span class="inline-block text-xs font-bold px-2 py-1 rounded mt-1
+                                {% if payment.status == 'В ожидании' %}bg-yellow-100 dark:bg-yellow-900 text-yellow-800 dark:text-yellow-200
+                                {% elif payment.status == 'Завершен' %}bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200
+                                {% else %}bg-red-100 dark:bg-red-900 text-red-800 dark:text-red-200{% endif %}">
+                                {{ payment.status }}
+                            </span>
+                        </p>
+                    </div>
+                {% endif %}
+            {% endwith %}
+        </div>
+
+        <!-- Предупреждение -->
+        <div class="bg-red-50 dark:bg-red-900 border-l-4 border-red-500 dark:border-red-400 p-4 mb-8 rounded">
+            <p class="text-red-800 dark:text-red-200">
+                <strong>⚠️ Внимание!</strong> Вы собираетесь отменить этот заказ. После отмены:
+            </p>
+            <ul class="list-disc list-inside text-red-800 dark:text-red-200 mt-2 ml-2 space-y-1">
+                <li>Заказ будет помечен как отменённый</li>
+                <li>Платёж будет отменён (если он ещё не завершен)</li>
+                <li>Это действие необратимо</li>
+            </ul>
+        </div>
+
+        <!-- Кнопки действия -->
+        <div class="flex gap-4">
+            <form method="POST" class="flex-1">
+                {% csrf_token %}
+                <button type="submit" class="w-full bg-red-600 dark:bg-red-700 text-white font-bold py-3 px-4 rounded-lg hover:bg-red-700 dark:hover:bg-red-600 transition-all">
+                    ❌ Да, отменить заказ
+                </button>
+            </form>
+            <a href="{% url 'order_confirmation' order.id %}" class="flex-1 bg-gray-600 dark:bg-slate-600 text-white font-bold py-3 px-4 rounded-lg hover:bg-gray-700 dark:hover:bg-slate-500 transition-all text-center">
+                ← Вернуться
+            </a>
+        </div>
+    </div>
+</div>
+{% endblock %}
