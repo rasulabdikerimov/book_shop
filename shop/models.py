@@ -207,11 +207,10 @@ class Order(models.Model):
         return f'Order #{self.order_number} - {self.user.username}'
     
     def can_be_cancelled(self):
-        """Проверить может ли заказ быть отменен (доставка в ожидании или не создана)"""
+     
         delivery = self.delivery_set.first()
-        if not delivery:
-            return True  # Если доставка не создана, можно отменить
-        return delivery.status == 'В ожидании'  # Можно отменить только если доставка в ожидании
+      
+        return delivery is None
 class Payment(models.Model):
     STATUS_CHOICES = [
         ('В ожидании', 'В ожидании'),

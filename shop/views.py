@@ -486,16 +486,15 @@ def order_confirmation(request, order_id):
 
 
 def cancel_order(request, order_id):
-    """Отмена заказа пользователем"""
+
     order = get_object_or_404(Order, id=order_id, user=request.user)
-    
-    # Проверяем может ли быть отменен заказ
+
     if not order.can_be_cancelled():
         return render(request, 'shop/order_confirmation.html', {
             'order': order,
             'books': order.book.all(),
             'payment': order.payment_set.first(),
-            'error': 'Заказ находится в пути и не может быть отменен'
+            'error': 'Отмена невозможна: для заказа уже создана доставка.'
         })
     
     if request.method == 'POST':

@@ -24,6 +24,19 @@
     </div>
 </div>
 
+<!-- Аналитика -->
+<div class="panel mt-6">
+    <h2>📊 Аналитика и отчёты</h2>
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px;">
+        <a href="{% url 'adminpanel:analytics' %}?period=month" class="btn" style="background-color: #0066cc; color: white; text-align: center; padding: 15px; border-radius: 8px; text-decoration: none; font-weight: bold;">
+            📈 Аналитика за месяц
+        </a>
+        <a href="{% url 'adminpanel:analytics' %}?period=year" class="btn" style="background-color: #0066cc; color: white; text-align: center; padding: 15px; border-radius: 8px; text-decoration: none; font-weight: bold;">
+            📊 Аналитика за год
+        </a>
+    </div>
+</div>
+
 <div class="panel mt-6">
     <h2>Последние книги</h2>
     <div class="table-wrap">
@@ -39,3 +52,4 @@
     </div>
 </div>
 {% endblock %}
+

@@ -49,71 +49,71 @@ def users_list(request):
 @_staff_required
 def orders_list(request):
 	from django.core.paginator import Paginator
-	from django.db.models import Q
-	
+	from django.db.models import Q, Sum
 
-	orders_all = Order.objects.all().order_by('-created_at')
 	
-	
-	payment_status = request.GET.get('payment_status')
+	orders_qs = Order.objects.select_related('user').prefetch_related('book', 'payment_set', 'delivery_set').order_by('-created_at')
+
+	payment_status = (request.GET.get('payment_status') or '').strip()
+	delivery_status = (request.GET.get('delivery_status') or '').strip()
+	date_from = (request.GET.get('date_from') or '').strip()
+	date_to = (request.GET.get('date_to') or '').strip()
+	price_from = (request.GET.get('price_from') or '').strip()
+	price_to = (request.GET.get('price_to') or '').strip()
+	customer = (request.GET.get('customer') or '').strip()
+	product = (request.GET.get('product') or '').strip()
+
+	q = Q()
+
 	if payment_status:
-		orders_all = orders_all.filter(payment__status=payment_status)
-	
+		q &= Q(payment__status=payment_status)
 
-	delivery_status = request.GET.get('delivery_status')
 	if delivery_status:
-		orders_all = orders_all.filter(delivery__status=delivery_status)
-	
+		q &= Q(delivery__status=delivery_status)
 
-	date_from = request.GET.get('date_from')
-	date_to = request.GET.get('date_to')
 	if date_from:
-		orders_all = orders_all.filter(created_at__gte=date_from)
+		q &= Q(created_at__gte=date_from)
 	if date_to:
-		orders_all = orders_all.filter(created_at__lte=date_to)
-	
+		q &= Q(created_at__lte=date_to)
 
-	price_from = request.GET.get('price_from')
-	price_to = request.GET.get('price_to')
 	if price_from:
 		try:
-			orders_all = orders_all.filter(total_price__gte=int(price_from))
+			q &= Q(total_price__gte=int(price_from))
 		except ValueError:
 			pass
 	if price_to:
 		try:
-			orders_all = orders_all.filter(total_price__lte=int(price_to))
+			q &= Q(total_price__lte=int(price_to))
 		except ValueError:
 			pass
-	
 
-	customer = request.GET.get('customer')
 	if customer:
-		orders_all = orders_all.filter(Q(user__email__icontains=customer) | Q(user__username__icontains=customer))
-	
-
-	product = request.GET.get('product')
-	if product:
-		orders_all = orders_all.filter(book__title__icontains=product).distinct()
-	
+		q &= (Q(user__email__icontains=customer) | Q(user__username__icontains=customer))
 
 	if product:
-		orders_all = orders_all.distinct()
-	
-	
+		q &= Q(book__title__icontains=product)
+
+	# Apply filters and ensure distinct results (joins can duplicate rows)
+	if q:
+		orders_all = orders_qs.filter(q).distinct()
+	else:
+		orders_all = orders_qs
+
+	# Pagination
 	paginator = Paginator(orders_all, 10)
 	page_number = request.GET.get('page')
 	orders = paginator.get_page(page_number)
-	
-	
-	total_sales = sum(order.total_price for order in orders_all)
-	average_order = int(total_sales / orders_all.count()) if orders_all.count() > 0 else 0
-	
+
+	# Aggregates
+	total_sales = orders_all.aggregate(total=Sum('total_price'))['total'] or 0
+	total_count = orders_all.count()
+	average_order = int(total_sales / total_count) if total_count > 0 else 0
+
 	context = {
 		'orders': orders,
 		'total_sales': total_sales,
 		'average_order': average_order,
-		'total_orders': orders_all.count(),
+		'total_orders': total_count,
 		# Передаём текущие параметры фильтра для сохранения в формах
 		'payment_status': payment_status,
 		'delivery_status': delivery_status,
@@ -504,3 +504,130 @@ def author_delete(request, author_id):
 		'cancel_url': 'adminpanel:authors_list',
 	}
 	return render(request, 'adminpanel/confirm_delete.html', context)
+
+
+@_staff_required
+def analytics(request):
+	"""Расширенная аналитика с диаграммами по периодам"""
+	from datetime import datetime, timedelta
+	from django.db.models import Count, Sum, Q
+	from django.utils import timezone
+	import json
+	
+	# Получаем период из GET параметра
+	period = request.GET.get('period', 'month')  # 'month' или 'year'
+	
+	# Определяем начало периода
+	now = timezone.now()
+	if period == 'year':
+		start_date = now.replace(month=1, day=1, hour=0, minute=0, second=0, microsecond=0)
+		period_name = f"{now.year} год"
+	else:  # month
+		start_date = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+		period_name = f"{now.strftime('%B %Y')}"
+	
+	# ===== ТОП КНИГ =====
+	top_books = Book.objects.filter(
+		order__created_at__gte=start_date
+	).annotate(
+		sales_count=Count('order')
+	).order_by('-sales_count')[:10]
+	
+	books_labels = [b.title[:20] for b in top_books]
+	books_data = [b.sales_count for b in top_books]
+	
+	# ===== ДОХОДЫ ПО ДНЯМ/МЕСЯЦАМ =====
+	if period == 'year':
+		# Группируем по месяцам
+		orders_by_month = []
+		revenue_by_month = []
+		for month in range(1, 13):
+			month_start = now.replace(month=month, day=1, hour=0, minute=0, second=0, microsecond=0)
+			if month == 12:
+				month_end = month_start.replace(year=month_start.year + 1, month=1, day=1)
+			else:
+				month_end = month_start.replace(month=month + 1, day=1)
+			
+			revenue = Order.objects.filter(
+				created_at__gte=month_start,
+				created_at__lt=month_end,
+				cancel_status='Активен'
+			).aggregate(total=Sum('total_price'))['total'] or 0
+			revenue_by_month.append(revenue)
+			orders_by_month.append(f"Мес {month}")
+	else:
+		# Группируем по дням месяца
+		orders_by_month = []
+		revenue_by_month = []
+		days_in_month = (start_date.replace(day=1) + timedelta(days=32)).replace(day=1) - timedelta(days=1)
+		for day in range(1, days_in_month.day + 1):
+			day_start = start_date.replace(day=day, hour=0, minute=0, second=0, microsecond=0)
+			day_end = day_start + timedelta(days=1)
+			
+			revenue = Order.objects.filter(
+				created_at__gte=day_start,
+				created_at__lt=day_end,
+				cancel_status='Активен'
+			).aggregate(total=Sum('total_price'))['total'] or 0
+			revenue_by_month.append(revenue)
+			orders_by_month.append(f"День {day}")
+	
+	# ===== КЛИЕНТЫ =====
+	top_customers = CustomUser.objects.filter(
+		order__created_at__gte=start_date
+	).annotate(
+		orders_count=Count('order'),
+		total_spent=Sum('order__total_price')
+	).order_by('-total_spent')[:10]
+	
+	customers_labels = [u.username[:15] for u in top_customers]
+	customers_data = [u.total_spent or 0 for u in top_customers]
+	
+	# ===== ОТЗЫВЫ =====
+	reviews_by_rating = Review.objects.filter(
+		created_at__gte=start_date
+	).values('stars').annotate(count=Count('id')).order_by('stars')
+	
+	ratings_labels = [f"{r['stars']}★" for r in reviews_by_rating]
+	ratings_data = [r['count'] for r in reviews_by_rating]
+	
+	# Если нет данных, добавляем 0
+	if not ratings_labels:
+		ratings_labels = ["1★", "2★", "3★", "4★", "5★"]
+		ratings_data = [0, 0, 0, 0, 0]
+	
+	# ===== СТАТУСЫ ЗАКАЗОВ =====
+	payment_statuses = Order.objects.filter(
+		created_at__gte=start_date
+	).values('payment__status').annotate(count=Count('id')).order_by('payment__status')
+	
+	status_labels = [s['payment__status'] or 'Не указан' for s in payment_statuses]
+	status_data = [s['count'] for s in payment_statuses]
+	
+	# ===== ЖАНРЫ =====
+	genres_stats = Book.objects.filter(
+		order__created_at__gte=start_date
+	).values('genres__genre').annotate(count=Count('order')).order_by('-count')[:8]
+	
+	genres_labels = [g['genres__genre'] for g in genres_stats]
+	genres_data = [g['count'] for g in genres_stats]
+	
+	context = {
+		'period': period,
+		'period_name': period_name,
+		'books_labels': json.dumps(books_labels),
+		'books_data': json.dumps(books_data),
+		'orders_labels': json.dumps(orders_by_month),
+		'revenue_data': json.dumps(revenue_by_month),
+		'customers_labels': json.dumps(customers_labels),
+		'customers_data': json.dumps(customers_data),
+		'ratings_labels': json.dumps(ratings_labels),
+		'ratings_data': json.dumps(ratings_data),
+		'status_labels': json.dumps(status_labels),
+		'status_data': json.dumps(status_data),
+		'genres_labels': json.dumps(genres_labels),
+		'genres_data': json.dumps(genres_data),
+		'top_customers': top_customers,
+		'top_books': top_books,
+	}
+	return render(request, 'adminpanel/analytics.html', context)

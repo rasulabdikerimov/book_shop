@@ -1,0 +1,364 @@
+{% extends 'adminpanel/base.html' %}
+{% block title %}Analytics — Admin{% endblock %}
+{% block header %}📊 Аналитика{% endblock %}
+
+{% block content %}
+<div class="panel">
+    <!-- Переключатель периодов -->
+    <div style="background: white; padding: 20px; border-radius: 8px; margin-bottom: 20px; border: 1px solid #ddd; display: flex; gap: 15px; align-items: center;">
+        <strong>Период:</strong>
+        <a href="?period=month" class="btn {% if period == 'month' %}{% else %}muted{% endif %}" style="{% if period == 'month' %}background-color: #0066cc; color: white;{% endif %}">📅 Месяц</a>
+        <a href="?period=year" class="btn {% if period == 'year' %}{% else %}muted{% endif %}" style="{% if period == 'year' %}background-color: #0066cc; color: white;{% endif %}">📈 Год</a>
+        <span style="margin-left: auto; font-weight: bold; color: #333;">{{ period_name }}</span>
+    </div>
+
+    <!-- Сетка диаграмм -->
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(500px, 1fr)); gap: 20px;">
+        
+        <!-- 1. ТОП КНИГ -->
+        <div style="background: white; padding: 20px; border-radius: 8px; border: 1px solid #ddd; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+            <h3 style="margin-top: 0; margin-bottom: 20px; color: #333;">📚 Топ продаваемые книги</h3>
+            <canvas id="booksChart"></canvas>
+        </div>
+
+        <!-- 2. ДОХОДЫ ПО ПЕРИОДАМ -->
+        <div style="background: white; padding: 20px; border-radius: 8px; border: 1px solid #ddd; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+            <h3 style="margin-top: 0; margin-bottom: 20px; color: #333;">💰 Доходы по периодам</h3>
+            <canvas id="revenueChart"></canvas>
+        </div>
+
+        <!-- 3. ТОП КЛИЕНТОВ -->
+        <div style="background: white; padding: 20px; border-radius: 8px; border: 1px solid #ddd; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+            <h3 style="margin-top: 0; margin-bottom: 20px; color: #333;">👥 Топ клиенты по затратам</h3>
+            <canvas id="customersChart"></canvas>
+        </div>
+
+        <!-- 4. РЕЙТИНГИ ОТЗЫВОВ -->
+        <div style="background: white; padding: 20px; border-radius: 8px; border: 1px solid #ddd; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+            <h3 style="margin-top: 0; margin-bottom: 20px; color: #333;">⭐ Распределение рейтингов</h3>
+            <canvas id="ratingsChart"></canvas>
+        </div>
+
+        <!-- 5. СТАТУСЫ ЗАКАЗОВ -->
+        <div style="background: white; padding: 20px; border-radius: 8px; border: 1px solid #ddd; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+            <h3 style="margin-top: 0; margin-bottom: 20px; color: #333;">📦 Статусы платежей</h3>
+            <canvas id="statusChart"></canvas>
+        </div>
+
+        <!-- 6. ЖАНРЫ -->
+        <div style="background: white; padding: 20px; border-radius: 8px; border: 1px solid #ddd; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+            <h3 style="margin-top: 0; margin-bottom: 20px; color: #333;">🎭 Популярные жанры</h3>
+            <canvas id="genresChart"></canvas>
+        </div>
+    </div>
+
+    <!-- Таблица топ клиентов -->
+    <div style="background: white; padding: 20px; border-radius: 8px; margin-top: 20px; border: 1px solid #ddd;">
+        <h3 style="margin-top: 0; margin-bottom: 15px; color: #333;">👥 Детально: Топ клиенты</h3>
+        <table style="width: 100%; border-collapse: collapse;">
+            <thead>
+                <tr style="background: #f9fafb; border-bottom: 2px solid #ddd;">
+                    <th style="padding: 12px; text-align: left; font-weight: bold;">Клиент</th>
+                    <th style="padding: 12px; text-align: left; font-weight: bold;">Email</th>
+                    <th style="padding: 12px; text-align: center; font-weight: bold;">Заказов</th>
+                    <th style="padding: 12px; text-align: right; font-weight: bold;">Потратил</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for customer in top_customers %}
+                <tr style="border-bottom: 1px solid #eee;">
+                    <td style="padding: 12px;">{{ customer.username }}</td>
+                    <td style="padding: 12px;">{{ customer.email }}</td>
+                    <td style="padding: 12px; text-align: center;">{{ customer.orders_count }}</td>
+                    <td style="padding: 12px; text-align: right; font-weight: bold; color: #16a34a;">{{ customer.total_spent }} ₽</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Таблица топ книг -->
+    <div style="background: white; padding: 20px; border-radius: 8px; margin-top: 20px; border: 1px solid #ddd;">
+        <h3 style="margin-top: 0; margin-bottom: 15px; color: #333;">📚 Детально: Топ книги</h3>
+        <table style="width: 100%; border-collapse: collapse;">
+            <thead>
+                <tr style="background: #f9fafb; border-bottom: 2px solid #ddd;">
+                    <th style="padding: 12px; text-align: left; font-weight: bold;">Название</th>
+                    <th style="padding: 12px; text-align: left; font-weight: bold;">Автор</th>
+                    <th style="padding: 12px; text-align: center; font-weight: bold;">Продано</th>
+                    <th style="padding: 12px; text-align: right; font-weight: bold;">Цена</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for book in top_books %}
+                <tr style="border-bottom: 1px solid #eee;">
+                    <td style="padding: 12px;"><strong>{{ book.title }}</strong></td>
+                    <td style="padding: 12px;">{{ book.authors.all|join:", " }}</td>
+                    <td style="padding: 12px; text-align: center;">{{ book.sales_count }}</td>
+                    <td style="padding: 12px; text-align: right; font-weight: bold; color: #0066cc;">{{ book.price }} ₽</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Подключаем Chart.js CDN -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<script>
+    // Цвета для диаграмм
+    const colors = {
+        primary: '#3b82f6',
+        success: '#10b981',
+        danger: '#ef4444',
+        warning: '#f59e0b',
+        info: '#0ea5e9',
+        light: '#e5e7eb',
+    };
+
+    const bgColors = [
+        'rgba(59, 130, 246, 0.7)',
+        'rgba(16, 185, 129, 0.7)',
+        'rgba(239, 68, 68, 0.7)',
+        'rgba(245, 158, 11, 0.7)',
+        'rgba(14, 165, 233, 0.7)',
+        'rgba(168, 85, 247, 0.7)',
+        'rgba(236, 72, 153, 0.7)',
+        'rgba(249, 115, 22, 0.7)',
+    ];
+
+    const borderColors = [
+        'rgb(59, 130, 246)',
+        'rgb(16, 185, 129)',
+        'rgb(239, 68, 68)',
+        'rgb(245, 158, 11)',
+        'rgb(14, 165, 233)',
+        'rgb(168, 85, 247)',
+        'rgb(236, 72, 153)',
+        'rgb(249, 115, 22)',
+    ];
+
+    // 1. ТОП КНИГ - Horizontal Bar Chart
+    const booksCtx = document.getElementById('booksChart').getContext('2d');
+    new Chart(booksCtx, {
+        type: 'doughnut',
+        data: {
+            labels: {{ books_labels|safe }},
+            datasets: [{
+                label: 'Продаж',
+                data: {{ books_data|safe }},
+                backgroundColor: bgColors,
+                borderColor: borderColors,
+                borderWidth: 2,
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: true,
+            plugins: {
+                legend: {
+                    position: 'bottom',
+                    labels: {
+                        font: { size: 12 },
+                        padding: 15,
+                    }
+                },
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            return 'Продаж: ' + context.parsed;
+                        }
+                    }
+                }
+            }
+        }
+    });
+
+    // 2. ДОХОДЫ ПО ПЕРИОДАМ - Line Chart
+    const revenueCtx = document.getElementById('revenueChart').getContext('2d');
+    new Chart(revenueCtx, {
+        type: 'line',
+        data: {
+            labels: {{ orders_labels|safe }},
+            datasets: [{
+                label: 'Доходы (₽)',
+                data: {{ revenue_data|safe }},
+                backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                borderColor: 'rgb(16, 185, 129)',
+                borderWidth: 3,
+                tension: 0.4,
+                fill: true,
+                pointRadius: 4,
+                pointHoverRadius: 6,
+                pointBackgroundColor: 'rgb(16, 185, 129)',
+            }]
+        },
+        options: {
+            responsive: true,
+            plugins: {
+                legend: {
+                    display: true,
+                    labels: { font: { size: 12 } }
+                },
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            return 'Доход: ' + context.parsed.y + ' ₽';
+                        }
+                    }
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    ticks: {
+                        callback: function(value) {
+                            return value + ' ₽';
+                        }
+                    }
+                }
+            }
+        }
+    });
+
+    // 3. ТОП КЛИЕНТОВ - Pie Chart
+    const customersCtx = document.getElementById('customersChart').getContext('2d');
+    new Chart(customersCtx, {
+        type: 'pie',
+        data: {
+            labels: {{ customers_labels|safe }},
+            datasets: [{
+                label: 'Затраты (₽)',
+                data: {{ customers_data|safe }},
+                backgroundColor: bgColors,
+                borderColor: borderColors,
+                borderWidth: 2,
+            }]
+        },
+        options: {
+            responsive: true,
+            plugins: {
+                legend: {
+                    position: 'bottom',
+                    labels: {
+                        font: { size: 11 },
+                        padding: 15,
+                    }
+                },
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            return 'Затрачено: ' + context.parsed + ' ₽';
+                        }
+                    }
+                }
+            }
+        }
+    });
+
+    // 4. РЕЙТИНГИ ОТЗЫВОВ - Doughnut Chart
+    const ratingsCtx = document.getElementById('ratingsChart').getContext('2d');
+    new Chart(ratingsCtx, {
+        type: 'doughnut',
+        data: {
+            labels: {{ ratings_labels|safe }},
+            datasets: [{
+                label: 'Отзывы',
+                data: {{ ratings_data|safe }},
+                backgroundColor: ['#ef4444', '#f97316', '#f59e0b', '#eab308', '#10b981'],
+                borderColor: ['#dc2626', '#ea580c', '#d97706', '#ca8a04', '#059669'],
+                borderWidth: 2,
+            }]
+        },
+        options: {
+            responsive: true,
+            plugins: {
+                legend: {
+                    position: 'bottom',
+                    labels: { font: { size: 12 } }
+                },
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            return 'Отзывов: ' + context.parsed;
+                        }
+                    }
+                }
+            }
+        }
+    });
+
+    // 5. СТАТУСЫ ЗАКАЗОВ - Pie Chart
+    const statusCtx = document.getElementById('statusChart').getContext('2d');
+    new Chart(statusCtx, {
+        type: 'pie',
+        data: {
+            labels: {{ status_labels|safe }},
+            datasets: [{
+                label: 'Заказы',
+                data: {{ status_data|safe }},
+                backgroundColor: [
+                    'rgba(16, 185, 129, 0.7)',
+                    'rgba(245, 158, 11, 0.7)',
+                    'rgba(239, 68, 68, 0.7)',
+                ],
+                borderColor: [
+                    'rgb(16, 185, 129)',
+                    'rgb(245, 158, 11)',
+                    'rgb(239, 68, 68)',
+                ],
+                borderWidth: 2,
+            }]
+        },
+        options: {
+            responsive: true,
+            plugins: {
+                legend: {
+                    position: 'bottom',
+                    labels: { font: { size: 12 } }
+                },
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            return 'Заказов: ' + context.parsed;
+                        }
+                    }
+                }
+            }
+        }
+    });
+
+    // 6. ЖАНРЫ - Bar Chart
+    const genresCtx = document.getElementById('genresChart').getContext('2d');
+    new Chart(genresCtx, {
+        type: 'polarArea',
+        data: {
+            labels: {{ genres_labels|safe }},
+            datasets: [{
+                label: 'Продажи',
+                data: {{ genres_data|safe }},
+                backgroundColor: bgColors,
+                borderColor: borderColors,
+                borderWidth: 2,
+            }]
+        },
+        options: {
+            responsive: true,
+            plugins: {
+                legend: {
+                    position: 'bottom',
+                    labels: { font: { size: 11 } }
+                },
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            return 'Продано: ' + context.parsed.r;
+                        }
+                    }
+                }
+            }
+        }
+    });
+</script>
+{% endblock %}

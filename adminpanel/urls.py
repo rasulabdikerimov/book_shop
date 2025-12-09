@@ -5,6 +5,7 @@ app_name = 'adminpanel'
 
 urlpatterns = [
     path('', views.dashboard, name='dashboard'),
+    path('analytics/', views.analytics, name='analytics'),
     path('books/', views.books_list, name='books'),
     path('books/add/', views.book_create, name='book_create'),
     path('books/<int:book_id>/edit/', views.book_edit, name='book_edit'),
