@@ -1,0 +1,59 @@
+{% extends 'adminpanel/base.html' %}
+
+{% block title %}Корзины пользователей{% endblock %}
+
+{% block header %}Корзины пользователей{% endblock %}
+
+{% block content %}
+<div class="panel">
+    <h2>Активные корзины</h2>
+    <div class="table-wrap">
+        <table>
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Пользователь</th>
+                    <th>Книги</th>
+                    <th>Кол-во (поле)</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% if session_carts %}
+                    <tr><td colspan="4"><strong>Сессионные корзины (из django sessions)</strong></td></tr>
+                    {% for sc in session_carts %}
+                    <tr>
+                        <td>{{ sc.session_key }}</td>
+                        <td>{% if sc.user %}<a href="{% url 'adminpanel:user_edit' sc.user.id %}">{{ sc.user.username }}</a>{% else %}Аноним{% endif %}</td>
+                        <td>
+                            {% for item in sc.books_with_counts %}
+                                {{ item.book.title }} (x{{ item.qty }}){% if not forloop.last %}, {% endif %}
+                            {% empty %}
+                                —
+                            {% endfor %}
+                        </td>
+                        <td>{{ sc.total_items }}</td>
+                    </tr>
+                    {% endfor %}
+                {% endif %}
+
+                {% for cart in carts %}
+                <tr>
+                    <td>{{ cart.id }}</td>
+                    <td>{% if cart.user %}<a href="{% url 'adminpanel:user_edit' cart.user.id %}">{{ cart.user.username }}</a>{% else %}—{% endif %}</td>
+                    <td>
+                        {% for b in cart.book.all %}
+                            {{ b.title }}{% if not forloop.last %}, {% endif %}
+                        {% empty %}
+                            —
+                        {% endfor %}
+                    </td>
+                    <td>{{ cart.quantity }}</td>
+                </tr>
+                {% empty %}
+                <tr><td colspan="4">Нет модельных корзин</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

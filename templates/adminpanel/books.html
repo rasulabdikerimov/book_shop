@@ -14,6 +14,7 @@
                     <th>ID</th>
                     <th>Title</th>
                     <th>Authors</th>
+                    <th>Views</th>
                     <th>Price</th>
                     <th>Actions</th>
                 </tr>
@@ -24,11 +25,13 @@
                     <td>{{ book.id }}</td>
                     <td><a href="{% url 'detail' book.slug %}" class="muted-link">{{ book.title }}</a></td>
                     <td>{% for a in book.authors.all %}{{ a.full_name }}{% if not forloop.last %}, {% endif %}{% endfor %}</td>
+                    <td>{{ book.view_count|default:0 }}</td>
                     <td>{{ book.price }} ₽</td>
                     <td>
                         <a href="{% url 'adminpanel:book_edit' book.id %}" class="btn small">Edit</a>
                         <a href="{% url 'detail' book.slug %}" class="btn small muted">View</a>
                         <a href="{% url 'adminpanel:book_delete' book.id %}" class="btn small muted">Delete</a>
+                        <a href="{% url 'adminpanel:product_views' %}?book_id={{ book.id }}" class="btn small">Просмотры</a>
                     </td>
                 </tr>
                 {% endfor %}

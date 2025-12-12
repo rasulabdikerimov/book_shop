@@ -21,7 +21,7 @@ def dashboard(request):
 	books_count = Book.objects.count()
 	users_count = CustomUser.objects.count()
 	orders_count = Order.objects.count()
-	reviews_count = Review.objects.count()
+	reviews_count = Review.objects.count()#all,filter,count,order_by()
 	latest_books = Book.objects.order_by('-id')[:5]
 
 	context = {
@@ -386,6 +386,101 @@ def authors_list(request):
 
 
 @_staff_required
+def carts_list(request):
+	from django.core.paginator import Paginator
+	# Include both model-backed Cart objects (if any) and session-based carts
+	CartModel = __import__('shop.models', fromlist=['Cart']).Cart
+	carts_all = CartModel.objects.select_related('user').prefetch_related('book').order_by('-id')
+
+	# Gather session-based carts from django sessions
+	from django.contrib.sessions.models import Session
+	from django.contrib.auth import get_user_model
+	User = get_user_model()
+	session_carts = []
+	for sess in Session.objects.all():
+		try:
+			data = sess.get_decoded()
+		except Exception:
+			continue
+		cart = data.get('cart')
+		if not cart:
+			continue
+		# try to attach user if session has auth user id
+		user = None
+		uid = data.get('_auth_user_id')
+		if uid:
+			try:
+				user = User.objects.filter(pk=uid).first()
+			except Exception:
+				user = None
+
+		# resolve book objects
+		book_ids = [int(k) for k in cart.keys() if k.isdigit()]
+		books = []
+		books_with_counts = []
+		if book_ids:
+			BookModel = __import__('shop.models', fromlist=['Book']).Book
+			books = list(BookModel.objects.filter(id__in=book_ids))
+			# preserve original order of ids
+			for bid in book_ids:
+				try:
+					b = next(x for x in books if x.id == bid)
+				except StopIteration:
+					continue
+				qty = int(cart.get(str(bid), 0))
+				books_with_counts.append({'book': b, 'qty': qty})
+
+		session_carts.append({
+			'session_key': sess.session_key,
+			'user': user,
+			'books_with_counts': books_with_counts,
+			'total_items': sum(x['qty'] for x in books_with_counts) if books_with_counts else 0,
+		})
+
+	paginator = Paginator(carts_all, 20)
+	page_number = request.GET.get('page')
+	carts = paginator.get_page(page_number)
+
+	context = {
+		'carts': carts,
+		'total_carts': carts_all.count(),
+		'session_carts': session_carts,
+	}
+	return render(request, 'adminpanel/carts.html', context)
+
+
+@_staff_required
+def product_views(request):
+	from django.shortcuts import redirect
+
+	if request.method == 'POST':
+		book_id = request.POST.get('book_id')
+		action = request.POST.get('action')
+		next_url = request.POST.get('next') or None
+		if book_id and action == 'increment':
+			try:
+				b = Book.objects.get(id=int(book_id))
+				b.view_count = (b.view_count or 0) + 1
+				b.save()
+			except Book.DoesNotExist:
+				pass
+		if next_url:
+			return redirect(next_url)
+		return redirect('adminpanel:product_views')
+
+	book_id = request.GET.get('book_id')
+	if book_id:
+		try:
+			books = Book.objects.filter(id=int(book_id))
+		except ValueError:
+			books = Book.objects.none()
+	else:
+		books = Book.objects.all().order_by('-view_count', '-id')
+
+	return render(request, 'adminpanel/product_views.html', {'books': books})
+
+
+@_staff_required
 def genre_create(request):
 	from .forms import AdminGenreForm
 	
@@ -508,37 +603,47 @@ def author_delete(request, author_id):
 
 @_staff_required
 def analytics(request):
-	"""Расширенная аналитика с диаграммами по периодам"""
+
 	from datetime import datetime, timedelta
 	from django.db.models import Count, Sum, Q
 	from django.utils import timezone
 	import json
 	
-	# Получаем период из GET параметра
-	period = request.GET.get('period', 'month')  # 'month' или 'year'
+
+	period = request.GET.get('period', 'month')
+	# sort can be 'sales' or 'views'
+	sort = request.GET.get('sort', 'sales')
 	
-	# Определяем начало периода
+
 	now = timezone.now()
 	if period == 'year':
 		start_date = now.replace(month=1, day=1, hour=0, minute=0, second=0, microsecond=0)
 		period_name = f"{now.year} год"
-	else:  # month
+	else: 
 		start_date = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
 		period_name = f"{now.strftime('%B %Y')}"
 	
-	# ===== ТОП КНИГ =====
-	top_books = Book.objects.filter(
-		order__created_at__gte=start_date
-	).annotate(
-		sales_count=Count('order')
-	).order_by('-sales_count')[:10]
 	
-	books_labels = [b.title[:20] for b in top_books]
-	books_data = [b.sales_count for b in top_books]
-	
-	# ===== ДОХОДЫ ПО ДНЯМ/МЕСЯЦАМ =====
+	# Build top_books according to chosen sort
+	if sort == 'views':
+		# Order by global view_count but still annotate sales_count for display
+		top_books = Book.objects.annotate(sales_count=Count('order')).order_by('-view_count')[:10]
+		books_labels = [b.title[:20] for b in top_books]
+		books_data = [b.view_count or 0 for b in top_books]
+		books_metric_label = 'Просмотры'
+	else:
+		# Default: top by sales in the selected period
+		top_books = Book.objects.filter(
+			order__created_at__gte=start_date
+		).annotate(
+			sales_count=Count('order')
+		).order_by('-sales_count')[:10]
+		books_labels = [b.title[:20] for b in top_books]
+		books_data = [b.sales_count for b in top_books]
+		books_metric_label = 'Продаж'
+
 	if period == 'year':
-		# Группируем по месяцам
+	
 		orders_by_month = []
 		revenue_by_month = []
 		for month in range(1, 13):
@@ -556,7 +661,7 @@ def analytics(request):
 			revenue_by_month.append(revenue)
 			orders_by_month.append(f"Мес {month}")
 	else:
-		# Группируем по дням месяца
+	
 		orders_by_month = []
 		revenue_by_month = []
 		days_in_month = (start_date.replace(day=1) + timedelta(days=32)).replace(day=1) - timedelta(days=1)
@@ -572,7 +677,7 @@ def analytics(request):
 			revenue_by_month.append(revenue)
 			orders_by_month.append(f"День {day}")
 	
-	# ===== КЛИЕНТЫ =====
+
 	top_customers = CustomUser.objects.filter(
 		order__created_at__gte=start_date
 	).annotate(
@@ -583,28 +688,25 @@ def analytics(request):
 	customers_labels = [u.username[:15] for u in top_customers]
 	customers_data = [u.total_spent or 0 for u in top_customers]
 	
-	# ===== ОТЗЫВЫ =====
+
 	reviews_by_rating = Review.objects.filter(
 		created_at__gte=start_date
 	).values('stars').annotate(count=Count('id')).order_by('stars')
 	
 	ratings_labels = [f"{r['stars']}★" for r in reviews_by_rating]
 	ratings_data = [r['count'] for r in reviews_by_rating]
-	
-	# Если нет данных, добавляем 0
+
 	if not ratings_labels:
 		ratings_labels = ["1★", "2★", "3★", "4★", "5★"]
 		ratings_data = [0, 0, 0, 0, 0]
 	
-	# ===== СТАТУСЫ ЗАКАЗОВ =====
 	payment_statuses = Order.objects.filter(
 		created_at__gte=start_date
 	).values('payment__status').annotate(count=Count('id')).order_by('payment__status')
 	
 	status_labels = [s['payment__status'] or 'Не указан' for s in payment_statuses]
 	status_data = [s['count'] for s in payment_statuses]
-	
-	# ===== ЖАНРЫ =====
+
 	genres_stats = Book.objects.filter(
 		order__created_at__gte=start_date
 	).values('genres__genre').annotate(count=Count('order')).order_by('-count')[:8]
@@ -617,6 +719,8 @@ def analytics(request):
 		'period_name': period_name,
 		'books_labels': json.dumps(books_labels),
 		'books_data': json.dumps(books_data),
+		'books_metric_label': books_metric_label,
+		'sort': sort,
 		'orders_labels': json.dumps(orders_by_month),
 		'revenue_data': json.dumps(revenue_by_month),
 		'customers_labels': json.dumps(customers_labels),

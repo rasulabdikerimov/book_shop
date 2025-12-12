@@ -2,7 +2,7 @@
 from django.shortcuts import redirect, render,get_object_or_404
 from .models import Book, Genres, Authors, Languages, Countries, Review, ReviewImage, CustomUser, Order, Payment
 # Create your views here.
-from django.db.models import Q
+from django.db.models import Q, F
 from django.core.paginator import Paginator
 from .forms import CustomUserCreationForm, ReviewForm,CustomUserChangeForm
 from django.contrib.auth import login,authenticate,logout
@@ -133,6 +133,15 @@ def search_results(request):
     return render(request, 'shop/search_results.html', context)
 def book_detail(request, book_slug):
     book = get_object_or_404(Book, slug=book_slug)
+    # Increment view count atomically on GET
+    if request.method == 'GET':
+        try:
+            Book.objects.filter(pk=book.pk).update(view_count=F('view_count') + 1)
+            # refresh the instance so template shows updated count
+            book.refresh_from_db(fields=['view_count'])
+        except Exception:
+            # avoid breaking page if update fails
+            pass
     reviews = Review.objects.filter(book=book).select_related('user')
     related_books = Book.objects.filter(genres__in=book.genres.all()).exclude(id=book.id).distinct()[:4]
 

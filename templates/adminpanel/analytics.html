@@ -17,7 +17,13 @@
         
         <!-- 1. ТОП КНИГ -->
         <div style="background: white; padding: 20px; border-radius: 8px; border: 1px solid #ddd; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
-            <h3 style="margin-top: 0; margin-bottom: 20px; color: #333;">📚 Топ продаваемые книги</h3>
+            <div style="display:flex; align-items:center; gap:12px; margin-bottom:12px;">
+                <h3 style="margin:0; color: #333;">📚 Топ книги</h3>
+                <div style="margin-left: auto; display:flex; gap:8px;">
+                    <a href="?period={{ period }}&sort=sales" class="btn {% if sort != 'views' %}{% else %}muted{% endif %}" style="{% if sort != 'views' %}background-color:#0066cc;color:white;{% endif %}">По продажам</a>
+                    <a href="?period={{ period }}&sort=views" class="btn {% if sort == 'views' %}{% else %}muted{% endif %}" style="{% if sort == 'views' %}background-color:#0066cc;color:white;{% endif %}">По просмотрам</a>
+                </div>
+            </div>
             <canvas id="booksChart"></canvas>
         </div>
 
@@ -86,6 +92,7 @@
                     <th style="padding: 12px; text-align: left; font-weight: bold;">Название</th>
                     <th style="padding: 12px; text-align: left; font-weight: bold;">Автор</th>
                     <th style="padding: 12px; text-align: center; font-weight: bold;">Продано</th>
+                    <th style="padding: 12px; text-align: center; font-weight: bold;">Просмотры</th>
                     <th style="padding: 12px; text-align: right; font-weight: bold;">Цена</th>
                 </tr>
             </thead>
@@ -95,6 +102,7 @@
                     <td style="padding: 12px;"><strong>{{ book.title }}</strong></td>
                     <td style="padding: 12px;">{{ book.authors.all|join:", " }}</td>
                     <td style="padding: 12px; text-align: center;">{{ book.sales_count }}</td>
+                    <td style="padding: 12px; text-align: center;">{{ book.view_count|default:0 }}</td>
                     <td style="padding: 12px; text-align: right; font-weight: bold; color: #0066cc;">{{ book.price }} ₽</td>
                 </tr>
                 {% endfor %}
@@ -139,14 +147,15 @@
         'rgb(249, 115, 22)',
     ];
 
-    // 1. ТОП КНИГ - Horizontal Bar Chart
+    
     const booksCtx = document.getElementById('booksChart').getContext('2d');
+    const booksMetricLabel = "{{ books_metric_label }}";
     new Chart(booksCtx, {
         type: 'doughnut',
         data: {
             labels: {{ books_labels|safe }},
             datasets: [{
-                label: 'Продаж',
+                label: booksMetricLabel,
                 data: {{ books_data|safe }},
                 backgroundColor: bgColors,
                 borderColor: borderColors,
@@ -167,7 +176,7 @@
                 tooltip: {
                     callbacks: {
                         label: function(context) {
-                            return 'Продаж: ' + context.parsed;
+                            return booksMetricLabel + ': ' + context.parsed;
                         }
                     }
                 }
@@ -222,7 +231,7 @@
         }
     });
 
-    // 3. ТОП КЛИЕНТОВ - Pie Chart
+    
     const customersCtx = document.getElementById('customersChart').getContext('2d');
     new Chart(customersCtx, {
         type: 'pie',

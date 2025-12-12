@@ -144,6 +144,7 @@ class Book(models.Model):
     price = models.IntegerField(verbose_name='Цена книги:')
     stock = models.IntegerField(verbose_name='Кол-во в наличии:', default=0, blank=True)
     photo = models.ImageField(upload_to='books/', verbose_name='Фото книги:')
+    view_count = models.IntegerField(default=0, verbose_name='Количество просмотров:')
     genres = models.ManyToManyField(Genres, verbose_name='Жанр книги:')
     languages = models.ManyToManyField(Languages, verbose_name='Язык книги:')
     authors = models.ManyToManyField(Authors, verbose_name='Автор книги:')
