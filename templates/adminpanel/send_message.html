@@ -1,0 +1,29 @@
+{% extends 'adminpanel/base.html' %}
+
+{% block title %}Отправить сообщение{% endblock %}
+
+{% block header %}Отправить сообщение пользователям{% endblock %}
+
+{% block content %}
+<div class="panel">
+    <form method="post">
+        {% csrf_token %}
+        <div>
+            <label>Пользователи:</label>
+            {{ form.users }}
+        </div>
+        <div>
+            <label>Тема:</label>
+            {{ form.title }}
+        </div>
+        <div>
+            <label>Сообщение:</label>
+            {{ form.message }}
+        </div>
+        <div style="margin-top:12px;">
+            <button class="btn btn-primary" type="submit">Отправить</button>
+            <a href="{% url 'adminpanel:carts' %}" class="btn">Отмена</a>
+        </div>
+    </form>
+</div>
+{% endblock %}

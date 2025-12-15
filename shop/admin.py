@@ -14,8 +14,14 @@ admin.site.register(Review)
 admin.site.register(ReviewImage)
 admin.site.register(Book)
 admin.site.register(Cart)
+from .models import UserCartItem
+admin.site.register(UserCartItem)
 admin.site.register(Order)
 admin.site.register(Payment)
 admin.site.register(Delivery)
 admin.site.register(Employee)
+from .models import Notification, NotificationRecipient
+
+admin.site.register(Notification)
+admin.site.register(NotificationRecipient)
 

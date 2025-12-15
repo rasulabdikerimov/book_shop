@@ -4,6 +4,9 @@ from shop.models import Book, Order, CustomUser, Review, Delivery, Payment, Genr
 from .forms import AdminBookForm, AdminReviewForm, AdminUserForm, AdminGenreForm, AdminAuthorForm
 from django.urls import reverse
 from django.views.decorators.http import require_POST
+from .forms import AdminSendNotificationForm
+from django.contrib import messages
+from shop.models import Notification, NotificationRecipient
 
 
 def _staff_required(view_func):
@@ -14,14 +17,12 @@ def _staff_required(view_func):
 			return redirect('homepage')
 		return view_func(request, *args, **kwargs)
 	return _wrapped
-
-
 @_staff_required
 def dashboard(request):
 	books_count = Book.objects.count()
 	users_count = CustomUser.objects.count()
 	orders_count = Order.objects.count()
-	reviews_count = Review.objects.count()#all,filter,count,order_by()
+	reviews_count = Review.objects.count()
 	latest_books = Book.objects.order_by('-id')[:5]
 
 	context = {
@@ -32,18 +33,26 @@ def dashboard(request):
 		'latest_books': latest_books,
 	}
 	return render(request, 'adminpanel/dashboard.html', context)
-
-
-@_staff_required
-def books_list(request):
-	books = Book.objects.all().order_by('-id')
-	return render(request, 'adminpanel/books.html', {'books': books})
-
-
 @_staff_required
 def users_list(request):
 	users = CustomUser.objects.all().order_by('-id')
 	return render(request, 'adminpanel/users.html', {'users': users})
+
+
+@_staff_required
+def books_list(request):
+	from django.core.paginator import Paginator
+
+	books_all = Book.objects.all().order_by('-id')
+	paginator = Paginator(books_all, 20)
+	page_number = request.GET.get('page')
+	books = paginator.get_page(page_number)
+
+	context = {
+		'books': books,
+		'total_books': books_all.count(),
+	}
+	return render(request, 'adminpanel/books.html', context)
 
 
 @_staff_required
@@ -114,11 +123,10 @@ def orders_list(request):
 		'total_sales': total_sales,
 		'average_order': average_order,
 		'total_orders': total_count,
-		# Передаём текущие параметры фильтра для сохранения в формах
+
 		'payment_status': payment_status,
 		'delivery_status': delivery_status,
 		'date_from': date_from,
-		'date_to': date_to,
 		'price_from': price_from,
 		'price_to': price_to,
 		'customer': customer,
@@ -255,6 +263,28 @@ def order_update_status(request, order_id):
 
 
 @_staff_required
+def send_message(request):
+	# Allows admin to send a notification to multiple users (originates from carts view)
+	if request.method == 'POST':
+		form = AdminSendNotificationForm(request.POST)
+		if form.is_valid():
+			title = form.cleaned_data['title']
+			message_text = form.cleaned_data['message']
+			users = form.cleaned_data['users']
+
+			notif = Notification.objects.create(sender=request.user, title=title, message=message_text)
+			recipients = [NotificationRecipient(notification=notif, user=u) for u in users]
+			NotificationRecipient.objects.bulk_create(recipients)
+			messages.success(request, f'Отправлено {len(recipients)} сообщений.')
+			return redirect('adminpanel:carts')
+	else:
+		initial_users = request.GET.getlist('users')
+		form = AdminSendNotificationForm(initial={'users': initial_users})
+
+	return render(request, 'adminpanel/send_message.html', {'form': form})
+
+
+@_staff_required
 def delivery_create(request, order_id):
 
 	order = get_object_or_404(Order, id=order_id)
@@ -388,11 +418,11 @@ def authors_list(request):
 @_staff_required
 def carts_list(request):
 	from django.core.paginator import Paginator
-	# Include both model-backed Cart objects (if any) and session-based carts
+	
 	CartModel = __import__('shop.models', fromlist=['Cart']).Cart
 	carts_all = CartModel.objects.select_related('user').prefetch_related('book').order_by('-id')
 
-	# Gather session-based carts from django sessions
+	
 	from django.contrib.sessions.models import Session
 	from django.contrib.auth import get_user_model
 	User = get_user_model()
@@ -405,7 +435,7 @@ def carts_list(request):
 		cart = data.get('cart')
 		if not cart:
 			continue
-		# try to attach user if session has auth user id
+		
 		user = None
 		uid = data.get('_auth_user_id')
 		if uid:
@@ -414,14 +444,14 @@ def carts_list(request):
 			except Exception:
 				user = None
 
-		# resolve book objects
+	
 		book_ids = [int(k) for k in cart.keys() if k.isdigit()]
 		books = []
 		books_with_counts = []
 		if book_ids:
 			BookModel = __import__('shop.models', fromlist=['Book']).Book
 			books = list(BookModel.objects.filter(id__in=book_ids))
-			# preserve original order of ids
+		
 			for bid in book_ids:
 				try:
 					b = next(x for x in books if x.id == bid)
@@ -441,10 +471,27 @@ def carts_list(request):
 	page_number = request.GET.get('page')
 	carts = paginator.get_page(page_number)
 
+
+	try:
+		UserCartItem = __import__('shop.models', fromlist=['UserCartItem']).UserCartItem
+		user_carts_qs = UserCartItem.objects.select_related('book', 'user').order_by('user__id')
+		user_carts = {}
+		for item in user_carts_qs:
+			uid = item.user.id
+			if uid not in user_carts:
+				user_carts[uid] = {'user': item.user, 'books_with_counts': [], 'total_items': 0}
+			user_carts[uid]['books_with_counts'].append({'book': item.book, 'qty': item.quantity})
+			user_carts[uid]['total_items'] += item.quantity
+		# convert to list
+		user_carts = list(user_carts.values())
+	except Exception:
+		user_carts = []
+
 	context = {
 		'carts': carts,
 		'total_carts': carts_all.count(),
 		'session_carts': session_carts,
+		'user_carts': user_carts,
 	}
 	return render(request, 'adminpanel/carts.html', context)
 

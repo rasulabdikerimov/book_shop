@@ -7,6 +7,7 @@ from django.contrib.auth.models import AbstractUser
 from django.utils.text import slugify
 from django.urls import reverse
 import random
+from django.conf import settings
 # Create your models here.
 
 class CustomUser(AbstractUser):
@@ -166,6 +167,37 @@ class Book(models.Model):
 
     def get_absolute_url(self):
         return reverse('detail', kwargs={'book_slug': self.slug})
+
+
+class BookView(models.Model):
+    book = models.ForeignKey(Book, on_delete=models.CASCADE, related_name='book_views')
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.CASCADE)
+    session_key = models.CharField(max_length=40, null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        # Application logic will ensure uniqueness per (book, user) or (book, session_key)
+        verbose_name = 'Book View'
+        verbose_name_plural = 'Book Views'
+
+    def __str__(self):
+        if self.user:
+            return f'View of {self.book.title} by {self.user}'
+        return f'View of {self.book.title} by session {self.session_key}'
+
+
+class UserCartItem(models.Model):
+    user = models.ForeignKey('CustomUser', on_delete=models.CASCADE, related_name='cart_items')
+    book = models.ForeignKey(Book, on_delete=models.CASCADE)
+    quantity = models.IntegerField(default=1)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        unique_together = ('user', 'book')
+
+    def __str__(self):
+        return f'{self.user.username} - {self.book.title} (x{self.quantity})'
     
 class Cart(models.Model):
     user = models.ForeignKey(CustomUser, on_delete=models.CASCADE,
@@ -206,6 +238,31 @@ class Order(models.Model):
 
     def __str__(self) -> str:
         return f'Order #{self.order_number} - {self.user.username}'
+
+
+class Notification(models.Model):
+    sender = models.ForeignKey('CustomUser', null=True, blank=True, on_delete=models.SET_NULL,
+                               related_name='sent_notifications')
+    title = models.CharField(max_length=255)
+    message = models.TextField()
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f'Notification: {self.title}'
+
+
+class NotificationRecipient(models.Model):
+    notification = models.ForeignKey(Notification, on_delete=models.CASCADE, related_name='recipients')
+    user = models.ForeignKey('CustomUser', on_delete=models.CASCADE, related_name='notifications')
+    is_read = models.BooleanField(default=False)
+    deleted = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = ('notification', 'user')
+
+    def __str__(self):
+        return f'NotificationRecipient: {self.user.username} - {self.notification.title}'
     
     def can_be_cancelled(self):
      

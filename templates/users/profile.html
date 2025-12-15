@@ -181,6 +181,38 @@
                     {% endif %}
                 </div>
 
+                <!-- Сообщения от админов -->
+                <div class="bg-white rounded-xl shadow-lg p-6 border border-gray-200">
+                    <h3 class="text-2xl font-bold text-gray-900 mb-4 border-b border-gray-300 pb-3">
+                        ✉️ Сообщения от администрации
+                    </h3>
+                    {% if notifications %}
+                        <div class="space-y-4">
+                            {% for nr in notifications %}
+                                <div class="p-4 rounded-lg border border-gray-100">
+                                    <div class="flex justify-between items-start">
+                                        <div>
+                                            <h4 class="font-bold text-gray-900">{{ nr.notification.title }}</h4>
+                                            <p class="text-sm text-gray-600">{{ nr.notification.message }}</p>
+                                            <p class="text-xs text-gray-500 mt-2">{{ nr.created_at|date:"d.m.Y H:i" }}</p>
+                                        </div>
+                                        <div>
+                                            <form method="post" action="{% url 'notification_delete' nr.id %}">
+                                                {% csrf_token %}
+                                                <button class="inline-block text-sm bg-red-600 text-white px-3 py-1 rounded" type="submit">Удалить</button>
+                                            </form>
+                                        </div>
+                                    </div>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <div class="text-center py-8">
+                            <p class="text-gray-600">У вас пока нет сообщений</p>
+                        </div>
+                    {% endif %}
+                </div>
+
                 <!-- Избранные книги -->
                 <div class="bg-white rounded-xl shadow-lg p-6 border border-gray-200">
                     <h3 class="text-2xl font-bold text-gray-900 mb-4 border-b border-gray-300 pb-3">

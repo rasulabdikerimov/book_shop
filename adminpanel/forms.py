@@ -74,3 +74,10 @@ class AdminUserForm(forms.ModelForm):
         widgets = {
             'image': forms.ClearableFileInput(),
         }
+
+
+class AdminSendNotificationForm(forms.Form):
+    title = forms.CharField(max_length=255, widget=forms.TextInput(attrs={'placeholder': 'Тема сообщения'}))
+    message = forms.CharField(widget=forms.Textarea(attrs={'rows': 6, 'placeholder': 'Текст сообщения'}))
+    users = forms.ModelMultipleChoiceField(queryset=CustomUser.objects.all(), required=False,
+                                           widget=forms.SelectMultiple(attrs={'size': 8}))

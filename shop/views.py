@@ -1,10 +1,11 @@
 
 from django.shortcuts import redirect, render,get_object_or_404
-from .models import Book, Genres, Authors, Languages, Countries, Review, ReviewImage, CustomUser, Order, Payment
+from .models import Book, Genres, Authors, Languages, Countries, Review, ReviewImage, CustomUser, Order, Payment, BookView, UserCartItem, NotificationRecipient
 # Create your views here.
-from django.db.models import Q, F
+from django.db.models import Q, F, Sum
 from django.core.paginator import Paginator
 from .forms import CustomUserCreationForm, ReviewForm,CustomUserChangeForm
+from django.views.decorators.http import require_POST
 from django.contrib.auth import login,authenticate,logout
 from django.http import JsonResponse
 def homepage(request):
@@ -133,14 +134,29 @@ def search_results(request):
     return render(request, 'shop/search_results.html', context)
 def book_detail(request, book_slug):
     book = get_object_or_404(Book, slug=book_slug)
-    # Increment view count atomically on GET
+    # Increment view count only once per user/session on GET
     if request.method == 'GET':
         try:
-            Book.objects.filter(pk=book.pk).update(view_count=F('view_count') + 1)
-            # refresh the instance so template shows updated count
-            book.refresh_from_db(fields=['view_count'])
+            if request.user.is_authenticated:
+                # Count a view only if this user hasn't viewed the book yet
+                viewed = BookView.objects.filter(book=book, user=request.user).exists()
+                if not viewed:
+                    BookView.objects.create(book=book, user=request.user)
+                    Book.objects.filter(pk=book.pk).update(view_count=F('view_count') + 1)
+                    book.refresh_from_db(fields=['view_count'])
+            else:
+                # Use session to avoid counting multiple anonymous views
+                session_key = request.session.session_key
+                if not session_key:
+                    request.session.create()
+                    session_key = request.session.session_key
+                viewed = BookView.objects.filter(book=book, session_key=session_key).exists()
+                if not viewed:
+                    BookView.objects.create(book=book, session_key=session_key)
+                    Book.objects.filter(pk=book.pk).update(view_count=F('view_count') + 1)
+                    book.refresh_from_db(fields=['view_count'])
         except Exception:
-            # avoid breaking page if update fails
+            # avoid breaking page if anything unexpected happens
             pass
     reviews = Review.objects.filter(book=book).select_related('user')
     related_books = Book.objects.filter(genres__in=book.genres.all()).exclude(id=book.id).distinct()[:4]
@@ -225,6 +241,28 @@ def registration(request):
             user = form.save()
             login(request, user)
 
+            # merge session cart into persistent user cart after registration
+            try:
+                session_cart = request.session.get('cart', {})
+                if session_cart:
+                    for bid, qty in session_cart.items():
+                        try:
+                            book = Book.objects.get(id=int(bid))
+                        except Exception:
+                            continue
+                        obj, created = UserCartItem.objects.get_or_create(user=user, book=book)
+                        if not created:
+                            obj.quantity = obj.quantity + int(qty)
+                        else:
+                            obj.quantity = int(qty)
+                        obj.save()
+                    try:
+                        del request.session['cart']
+                    except KeyError:
+                        pass
+            except Exception:
+                pass
+
             return redirect('homepage')
     else:
         form = CustomUserCreationForm()
@@ -239,6 +277,28 @@ def login_view(request):
         user = authenticate(request, username=username, password=password)
         if user is not None:
             login(request, user)
+            # merge session cart into persistent user cart after login
+            try:
+                session_cart = request.session.get('cart', {})
+                if session_cart:
+                    for bid, qty in session_cart.items():
+                        try:
+                            book = Book.objects.get(id=int(bid))
+                        except Exception:
+                            continue
+                        obj, created = UserCartItem.objects.get_or_create(user=user, book=book)
+                        if not created:
+                            obj.quantity = obj.quantity + int(qty)
+                        else:
+                            obj.quantity = int(qty)
+                        obj.save()
+                    try:
+                        del request.session['cart']
+                    except KeyError:
+                        pass
+            except Exception:
+                pass
+
             return redirect('homepage')
         else:
             error_message = 'Invalid username or password.'
@@ -255,11 +315,13 @@ def profile(request):
     
     if not request.user.is_authenticated:
         return redirect('login')
-    
+    notifications = NotificationRecipient.objects.filter(user=request.user, deleted=False).select_related('notification').order_by('-created_at')
+
     context = {
         'user': request.user,
         'reviews': reviews,
         'orders': orders,
+        'notifications': notifications,
     }
     return render(request, 'users/profile.html', context)
 
@@ -281,6 +343,16 @@ def update_profile(request):
     return render(request, 'users/update_profile.html', context)
 
 
+@require_POST
+def notification_delete(request, recipient_id):
+    if not request.user.is_authenticated:
+        return redirect('login')
+    nr = get_object_or_404(NotificationRecipient, id=recipient_id, user=request.user)
+    nr.deleted = True
+    nr.save()
+    return redirect('profile')
+
+
 def _get_cart(session):
    
     return session.get('cart', {})
@@ -297,12 +369,25 @@ def add_to_cart(request, book_id):
     if request.method != 'POST':
         return redirect('detail', book_slug=book.slug)
 
-    cart = _get_cart(request.session)
     qty = int(request.POST.get('quantity', 1))
- 
     if qty < 1:
         qty = 1
 
+    # Authenticated users: persist to UserCartItem
+    if request.user.is_authenticated:
+        obj, created = UserCartItem.objects.get_or_create(user=request.user, book=book)
+        if not created:
+            obj.quantity = obj.quantity + qty
+        else:
+            obj.quantity = qty
+        obj.save()
+        total = UserCartItem.objects.filter(user=request.user).aggregate(total=Sum('quantity'))['total'] or 0
+        if request.headers.get('x-requested-with') == 'XMLHttpRequest':
+            return JsonResponse({'ok': True, 'cart_count': total})
+        return redirect('cart')
+
+    # Anonymous users: keep using session
+    cart = _get_cart(request.session)
     cart[str(book_id)] = cart.get(str(book_id), 0) + qty
     _save_cart(request.session, cart)
 
@@ -313,21 +398,31 @@ def add_to_cart(request, book_id):
 
 
 def cart_view(request):
-    cart = _get_cart(request.session)
+    # If user is authenticated, show persistent cart items, otherwise session cart
     items = []
     total = 0
-    book_ids = [int(k) for k in cart.keys()]
-    books = Book.objects.filter(id__in=book_ids)
-    books_map = {b.id: b for b in books}
-    for k, v in cart.items():
-        bid = int(k)
-        book = books_map.get(bid)
-        if not book:
-            continue
-        quantity = int(v)
-        subtotal = (book.price or 0) * quantity
-        total += subtotal
-        items.append({'book': book, 'quantity': quantity, 'subtotal': subtotal})
+    if request.user.is_authenticated:
+        user_items = UserCartItem.objects.filter(user=request.user).select_related('book')
+        for ui in user_items:
+            book = ui.book
+            qty = ui.quantity or 0
+            subtotal = (book.price or 0) * qty
+            total += subtotal
+            items.append({'book': book, 'quantity': qty, 'subtotal': subtotal})
+    else:
+        cart = _get_cart(request.session)
+        book_ids = [int(k) for k in cart.keys()]
+        books = Book.objects.filter(id__in=book_ids)
+        books_map = {b.id: b for b in books}
+        for k, v in cart.items():
+            bid = int(k)
+            book = books_map.get(bid)
+            if not book:
+                continue
+            quantity = int(v)
+            subtotal = (book.price or 0) * quantity
+            total += subtotal
+            items.append({'book': book, 'quantity': quantity, 'subtotal': subtotal})
 
     context = {'items': items, 'total': total}
     return render(request, 'shop/cart.html', context)
@@ -338,6 +433,35 @@ def update_cart(request):
     if request.method != 'POST':
         return redirect('cart')
 
+    # If authenticated, update persistent cart items
+    if request.user.is_authenticated:
+        changed = False
+        for key, val in request.POST.items():
+            if not key.startswith('qty_'):
+                continue
+            try:
+                book_id = int(key.split('_', 1)[1])
+                qty = int(val)
+            except Exception:
+                continue
+            try:
+                uci = UserCartItem.objects.filter(user=request.user, book_id=book_id).first()
+                if qty <= 0:
+                    if uci:
+                        uci.delete()
+                        changed = True
+                else:
+                    if uci:
+                        uci.quantity = qty
+                        uci.save()
+                    else:
+                        UserCartItem.objects.create(user=request.user, book_id=book_id, quantity=qty)
+                    changed = True
+            except Exception:
+                continue
+        return redirect('cart')
+
+    # Anonymous users: use session
     cart = _get_cart(request.session)
     changed = False
     for key, val in request.POST.items():
@@ -363,6 +487,11 @@ def update_cart(request):
 
 
 def remove_from_cart(request, book_id):
+    # If authenticated, remove from persistent cart, otherwise session
+    if request.user.is_authenticated:
+        UserCartItem.objects.filter(user=request.user, book_id=book_id).delete()
+        return redirect('cart')
+
     cart = _get_cart(request.session)
     book_id = str(book_id)
     if book_id in cart:
@@ -416,26 +545,36 @@ def checkout(request):
     if not request.user.is_authenticated:
         return redirect('login')
     
-    cart = _get_cart(request.session)
-    if not cart:
-        return redirect('cart')
-    
+    # For authenticated users, use persistent cart items
+    if request.user.is_authenticated:
+        user_items = UserCartItem.objects.filter(user=request.user).select_related('book')
+        if not user_items.exists():
+            return redirect('cart')
+    else:
+        cart = _get_cart(request.session)
+        if not cart:
+            return redirect('cart')
+
     if request.method == 'POST':
     
         delivery_address = request.POST.get('delivery_address', request.user.address).strip()
         payment_method = request.POST.get('payment_method', 'card').strip()
      
-        book_ids = [int(k) for k in cart.keys()]
-        books = Book.objects.filter(id__in=book_ids)
+        if request.user.is_authenticated:
+            books = [ui.book for ui in user_items]
+            # compute total using quantities
+            total_price = sum((b.price or 0) * ui.quantity for ui, b in zip(user_items, books))
+        else:
+            cart = _get_cart(request.session)
+            book_ids = [int(k) for k in cart.keys()]
+            books = Book.objects.filter(id__in=book_ids)
+            total_price = 0
+            for book in books:
+                qty = int(cart.get(str(book.id), 0))
+                total_price += (book.price or 0) * qty
         
         if not books:
             return redirect('cart')
-        
-        # Вычисляем общую цену
-        total_price = 0
-        for book in books:
-            qty = int(cart.get(str(book.id), 0))
-            total_price += (book.price or 0) * qty
         
         # Создаём заказ
         order = Order.objects.create(
@@ -443,9 +582,12 @@ def checkout(request):
             total_price=total_price
         )
         # Добавляем книги в заказ (товар будет вычтен только после оплаты и доставки)
-        for book in books:
-            qty = int(cart.get(str(book.id), 0))
-            order.book.add(book)
+        if request.user.is_authenticated:
+            for ui in user_items:
+                order.book.add(ui.book)
+        else:
+            for book in books:
+                order.book.add(book)
         
         # Создаём запись платежа
         Payment.objects.create(
@@ -456,21 +598,35 @@ def checkout(request):
         )
         
         # Очищаем корзину
-        _save_cart(request.session, {})
+        if request.user.is_authenticated:
+            user_items.delete()
+        else:
+            _save_cart(request.session, {})
         
         return redirect('order_confirmation', order_id=order.id)
     
     # GET: показываем форму оформления
-    book_ids = [int(k) for k in cart.keys()]
-    books = Book.objects.filter(id__in=book_ids)
-    
-    total_price = 0
-    items = []
-    for book in books:
-        qty = int(cart.get(str(book.id), 0))
-        subtotal = (book.price or 0) * qty
-        total_price += subtotal
-        items.append({'book': book, 'quantity': qty, 'subtotal': subtotal})
+    if request.user.is_authenticated:
+        items = []
+        total_price = 0
+        for ui in user_items:
+            book = ui.book
+            qty = ui.quantity
+            subtotal = (book.price or 0) * qty
+            total_price += subtotal
+            items.append({'book': book, 'quantity': qty, 'subtotal': subtotal})
+    else:
+        cart = _get_cart(request.session)
+        book_ids = [int(k) for k in cart.keys()]
+        books = Book.objects.filter(id__in=book_ids)
+        
+        total_price = 0
+        items = []
+        for book in books:
+            qty = int(cart.get(str(book.id), 0))
+            subtotal = (book.price or 0) * qty
+            total_price += subtotal
+            items.append({'book': book, 'quantity': qty, 'subtotal': subtotal})
     
     context = {
         'items': items,

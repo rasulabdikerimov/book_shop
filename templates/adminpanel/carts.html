@@ -7,10 +7,15 @@
 {% block content %}
 <div class="panel">
     <h2>Активные корзины</h2>
+    <form method="get" action="{% url 'adminpanel:carts_send_message' %}">
+        <div style="margin-bottom:12px;">
+            <button type="submit" class="btn btn-primary">Отправить сообщение выбранным пользователям</button>
+        </div>
     <div class="table-wrap">
         <table>
             <thead>
                 <tr>
+                    <th></th>
                     <th>ID</th>
                     <th>Пользователь</th>
                     <th>Книги</th>
@@ -22,11 +27,15 @@
                     <tr><td colspan="4"><strong>Сессионные корзины (из django sessions)</strong></td></tr>
                     {% for sc in session_carts %}
                     <tr>
+                        <td>{% if sc.user %}<input type="checkbox" name="users" value="{{ sc.user.id }}" />{% endif %}</td>
                         <td>{{ sc.session_key }}</td>
                         <td>{% if sc.user %}<a href="{% url 'adminpanel:user_edit' sc.user.id %}">{{ sc.user.username }}</a>{% else %}Аноним{% endif %}</td>
                         <td>
                             {% for item in sc.books_with_counts %}
-                                {{ item.book.title }} (x{{ item.qty }}){% if not forloop.last %}, {% endif %}
+                                {% if item.book.photo %}
+                                    <img src="{{ item.book.photo.url }}" alt="{{ item.book.title }}" style="width:40px;height:60px;object-fit:cover;margin-right:8px;vertical-align:middle;border-radius:4px;" />
+                                {% endif %}
+                                <a href="{% url 'adminpanel:book_edit' item.book.id %}">{{ item.book.title }}</a> (x{{ item.qty }}){% if not forloop.last %}, {% endif %}
                             {% empty %}
                                 —
                             {% endfor %}
@@ -36,13 +45,39 @@
                     {% endfor %}
                 {% endif %}
 
+                {% if user_carts %}
+                    <tr><td colspan="4"><strong>Постоянные корзины пользователей</strong></td></tr>
+                    {% for uc in user_carts %}
+                    <tr>
+                        <td>{% if uc.user %}<input type="checkbox" name="users" value="{{ uc.user.id }}" />{% endif %}</td>
+                        <td>{% if uc.user %}{{ uc.user.id }}{% else %}-{% endif %}</td>
+                        <td>{% if uc.user %}<a href="{% url 'adminpanel:user_edit' uc.user.id %}">{{ uc.user.username }}</a>{% else %}—{% endif %}</td>
+                        <td>
+                            {% for item in uc.books_with_counts %}
+                                {% if item.book.photo %}
+                                    <img src="{{ item.book.photo.url }}" alt="{{ item.book.title }}" style="width:40px;height:60px;object-fit:cover;margin-right:8px;vertical-align:middle;border-radius:4px;" />
+                                {% endif %}
+                                <a href="{% url 'adminpanel:book_edit' item.book.id %}">{{ item.book.title }}</a> (x{{ item.qty }}){% if not forloop.last %}, {% endif %}
+                            {% empty %}
+                                —
+                            {% endfor %}
+                        </td>
+                        <td>{{ uc.total_items }}</td>
+                    </tr>
+                    {% endfor %}
+                {% endif %}
+
                 {% for cart in carts %}
                 <tr>
+                    <td>{% if cart.user %}<input type="checkbox" name="users" value="{{ cart.user.id }}" />{% endif %}</td>
                     <td>{{ cart.id }}</td>
                     <td>{% if cart.user %}<a href="{% url 'adminpanel:user_edit' cart.user.id %}">{{ cart.user.username }}</a>{% else %}—{% endif %}</td>
                     <td>
                         {% for b in cart.book.all %}
-                            {{ b.title }}{% if not forloop.last %}, {% endif %}
+                            {% if b.photo %}
+                                <img src="{{ b.photo.url }}" alt="{{ b.title }}" style="width:40px;height:60px;object-fit:cover;margin-right:8px;vertical-align:middle;border-radius:4px;" />
+                            {% endif %}
+                            <a href="{% url 'adminpanel:book_edit' b.id %}">{{ b.title }}</a>{% if not forloop.last %}, {% endif %}
                         {% empty %}
                             —
                         {% endfor %}
@@ -52,6 +87,7 @@
                 {% empty %}
                 <tr><td colspan="4">Нет модельных корзин</td></tr>
                 {% endfor %}
+            </form>
             </tbody>
         </table>
     </div>
