@@ -134,29 +134,21 @@ def search_results(request):
     return render(request, 'shop/search_results.html', context)
 def book_detail(request, book_slug):
     book = get_object_or_404(Book, slug=book_slug)
-    # Increment view count only once per user/session on GET
     if request.method == 'GET':
         try:
-            if request.user.is_authenticated:
-                # Count a view only if this user hasn't viewed the book yet
-                viewed = BookView.objects.filter(book=book, user=request.user).exists()
-                if not viewed:
-                    BookView.objects.create(book=book, user=request.user)
-                    Book.objects.filter(pk=book.pk).update(view_count=F('view_count') + 1)
-                    book.refresh_from_db(fields=['view_count'])
-            else:
-                # Use session to avoid counting multiple anonymous views
+           
+            session_key = request.session.session_key
+            if not session_key:
+                request.session.create()
                 session_key = request.session.session_key
-                if not session_key:
-                    request.session.create()
-                    session_key = request.session.session_key
-                viewed = BookView.objects.filter(book=book, session_key=session_key).exists()
-                if not viewed:
-                    BookView.objects.create(book=book, session_key=session_key)
-                    Book.objects.filter(pk=book.pk).update(view_count=F('view_count') + 1)
-                    book.refresh_from_db(fields=['view_count'])
+         
+            if request.user.is_authenticated:
+                BookView.objects.create(book=book, user=request.user, session_key=session_key)
+            else:
+                BookView.objects.create(book=book, session_key=session_key)
+            Book.objects.filter(pk=book.pk).update(view_count=F('view_count') + 1)
+            book.refresh_from_db(fields=['view_count'])
         except Exception:
-            # avoid breaking page if anything unexpected happens
             pass
     reviews = Review.objects.filter(book=book).select_related('user')
     related_books = Book.objects.filter(genres__in=book.genres.all()).exclude(id=book.id).distinct()[:4]
@@ -240,8 +232,6 @@ def registration(request):
         if form.is_valid():
             user = form.save()
             login(request, user)
-
-            # merge session cart into persistent user cart after registration
             try:
                 session_cart = request.session.get('cart', {})
                 if session_cart:
@@ -277,7 +267,6 @@ def login_view(request):
         user = authenticate(request, username=username, password=password)
         if user is not None:
             login(request, user)
-            # merge session cart into persistent user cart after login
             try:
                 session_cart = request.session.get('cart', {})
                 if session_cart:
@@ -386,7 +375,7 @@ def add_to_cart(request, book_id):
             return JsonResponse({'ok': True, 'cart_count': total})
         return redirect('cart')
 
-    # Anonymous users: keep using session
+
     cart = _get_cart(request.session)
     cart[str(book_id)] = cart.get(str(book_id), 0) + qty
     _save_cart(request.session, cart)
@@ -398,7 +387,7 @@ def add_to_cart(request, book_id):
 
 
 def cart_view(request):
-    # If user is authenticated, show persistent cart items, otherwise session cart
+
     items = []
     total = 0
     if request.user.is_authenticated:
@@ -433,7 +422,6 @@ def update_cart(request):
     if request.method != 'POST':
         return redirect('cart')
 
-    # If authenticated, update persistent cart items
     if request.user.is_authenticated:
         changed = False
         for key, val in request.POST.items():
@@ -461,7 +449,6 @@ def update_cart(request):
                 continue
         return redirect('cart')
 
-    # Anonymous users: use session
     cart = _get_cart(request.session)
     changed = False
     for key, val in request.POST.items():
@@ -487,7 +474,6 @@ def update_cart(request):
 
 
 def remove_from_cart(request, book_id):
-    # If authenticated, remove from persistent cart, otherwise session
     if request.user.is_authenticated:
         UserCartItem.objects.filter(user=request.user, book_id=book_id).delete()
         return redirect('cart')
@@ -544,8 +530,6 @@ def checkout(request):
    
     if not request.user.is_authenticated:
         return redirect('login')
-    
-    # For authenticated users, use persistent cart items
     if request.user.is_authenticated:
         user_items = UserCartItem.objects.filter(user=request.user).select_related('book')
         if not user_items.exists():
@@ -562,7 +546,6 @@ def checkout(request):
      
         if request.user.is_authenticated:
             books = [ui.book for ui in user_items]
-            # compute total using quantities
             total_price = sum((b.price or 0) * ui.quantity for ui, b in zip(user_items, books))
         else:
             cart = _get_cart(request.session)
@@ -575,13 +558,11 @@ def checkout(request):
         
         if not books:
             return redirect('cart')
-        
-        # Создаём заказ
+    
         order = Order.objects.create(
             user=request.user,
             total_price=total_price
         )
-        # Добавляем книги в заказ (товар будет вычтен только после оплаты и доставки)
         if request.user.is_authenticated:
             for ui in user_items:
                 order.book.add(ui.book)
@@ -589,7 +570,6 @@ def checkout(request):
             for book in books:
                 order.book.add(book)
         
-        # Создаём запись платежа
         Payment.objects.create(
             order=order,
             payment_method=payment_method,
@@ -597,15 +577,12 @@ def checkout(request):
             amount=total_price
         )
         
-        # Очищаем корзину
         if request.user.is_authenticated:
             user_items.delete()
         else:
             _save_cart(request.session, {})
         
         return redirect('order_confirmation', order_id=order.id)
-    
-    # GET: показываем форму оформления
     if request.user.is_authenticated:
         items = []
         total_price = 0
@@ -663,11 +640,9 @@ def cancel_order(request, order_id):
         })
     
     if request.method == 'POST':
-        # Отмечаем заказ как отменен
         order.cancel_status = 'Отменен'
         order.save()
-        
-        # Отмечаем платеж как отменен
+    
         payment = order.payment_set.first()
         if payment and payment.status == 'В ожидании':
             payment.status = 'Отменен'
